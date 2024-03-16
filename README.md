@@ -1,1 +1,1 @@
-# dete-o-de-objetos-e-alerta
+# detecao-de-objetos-e-alerta
