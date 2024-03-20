@@ -28,9 +28,16 @@ def runscript():
         return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
 
     while cap.isOpened() and i < 11:
-        ret, frame = cap.read()
-        if not ret:  # Se o frame nao for lido corretamente
+        grabbed = cap.grab()
+        if not grabbed:  # Se o frame nao for lido corretamente
+            print("Error: Unable to grab frame from webcam.")
             break
+
+        ret, frame = cap.retrieve()
+        if not ret:
+            print("Error: Unable to retrieve frame from webcam.")
+            break
+
         results = model.track(
             frame, show=True, classes=indexPerson, stream=False, persist=True)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
