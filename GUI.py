@@ -1,56 +1,59 @@
 from PyQt5.QtWidgets import *
 from importlib import util
-# from importlib import import_module
 
 
-def main():
-    app = QApplication([])
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Deteção de objetos")
+        self.setGeometry(500, 500, 500, 500)
 
-    window = QWidget()
-    window.setGeometry(500, 500, 500, 500)
-    window.setWindowTitle("Deteção de objetos")
+        layout = QVBoxLayout()
 
-    layout = QVBoxLayout()
-    label = QLabel("Press the button to start record:")
-    button = QPushButton("Run script")
-    button.clicked.connect(run_script)
-    label2 = QLabel("Press the button to search for cameras:")
-    button2 = QPushButton("search devices")
-    button2.clicked.connect(list_available_cameras)
-    button.setGeometry(50, 30, 100, 30)
+        self.label = QLabel("Press the button to start record:")
+        self.button = QPushButton("Run script")
+        self.button.clicked.connect(self.run_script)
 
-    layout.addWidget(label)
-    layout.addWidget(button)
-    layout.addWidget(label2)
-    layout.addWidget(button2)
+        self.comboBox = QComboBox()
 
-    window.setLayout(layout)
+        self.label2 = QLabel("Press the button to search for cameras:")
+        self.button2 = QPushButton("Search Devices")
+        self.button2.clicked.connect(self.update_camera_list)
 
-    window.show()
-    app.exec()
+        layout.addWidget(self.label2)
+        layout.addWidget(self.button2)
+        layout.addWidget(self.comboBox)
+        layout.addWidget(self.label)
+        layout.addWidget(self.button)
 
+        self.setLayout(layout)
 
-def run_script(self):
-    try:
-        spec = util.spec_from_file_location("testeCv", "testeCv.py")
-        module = util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+    def run_script(self):
+        try:
+            spec = util.spec_from_file_location("testeCv", "testeCv.py")
+            module = util.module_from_spec(spec)
+            spec.loader.exec_module(module)
 
-        # Here you can specify the function you want to run dynamically
-        function_name = "runscript"
+            # Here you can specify the function you want to run dynamically
+            function_name = "runscript"
 
-        if hasattr(module, function_name):
-            function_to_run = getattr(module, function_name)
-            function_to_run()
-        else:
-            print(f"Function '{function_name}' not found in the module.")
-    except Exception as e:
-        print(f"Error executing script: {e}")
+            if hasattr(module, function_name):
+                function_to_run = getattr(module, function_name)
+                function_to_run()
+            else:
+                print(f"Function '{function_name}' not found in the module.")
+        except Exception as e:
+            print(f"Error executing script: {e}")
+
+    def update_camera_list(self):
+        num_devices = list_available_cameras()
+        self.comboBox.clear()
+        for i in range(num_devices):
+            self.comboBox.addItem("Device : " + str(i))
 
 
 def list_available_cameras():
     try:
-
         spec = util.spec_from_file_location("testeCv", "testeCv.py")
         module = util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -61,12 +64,17 @@ def list_available_cameras():
             function_to_run = getattr(module, function_name)
             num_devices = function_to_run()
             print("Numero devices:", num_devices)
+            return num_devices
         else:
             print(f"Function '{function_name}' not found in the module.")
 
     except Exception as e:
         print(f"Error executing script: {e}")
+        return 0
 
 
 if __name__ == '__main__':
-    main()
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec_()
