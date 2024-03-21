@@ -4,7 +4,6 @@ import time
 from ultralytics import YOLO
 import cv2
 import matplotlib.pyplot as plt
-import torch
 
 
 def runscript():
@@ -21,8 +20,6 @@ def runscript():
 
     x1_coordinates = []
     y1_coordinates = []
-    x2_coordinates = []
-    y2_coordinates = []
 
     def distance(x1, x2, y1, y2):
         return math.sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
@@ -65,7 +62,7 @@ def runscript():
                     y1Anterior = y1
                     x2Anterior = x2
                     y2Anterior = y2
-        i += 1
+            i += 1
         time.sleep(2)
 
     cap.release()
@@ -80,3 +77,25 @@ def runscript():
     plt.ylabel('Coordinate Value')
     plt.legend()
     plt.show()
+
+
+def list_available_cameras():
+    num_devices = 0
+    while True:
+        try:
+            cap = cv2.VideoCapture(num_devices)
+            if cap.isOpened():
+                print(f"Camera {num_devices}: Available")
+                cap.release()
+                num_devices += 1
+            else:
+                print(f"Camera {num_devices}: Not available")
+                break
+        except cv2.error as e:
+            print(f"Error accessing camera {num_devices}: {e}")
+            num_devices += 1
+            continue
+        except Exception as e:
+            print(f"Unknown error: {e}")
+            break
+    return num_devices
