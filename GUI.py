@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import *
 from importlib import util
+import testeCv
 
 
 class MainWindow(QWidget):
@@ -30,8 +31,10 @@ class MainWindow(QWidget):
 
     def run_script(self):
         device = self.comboBox.currentData()
-        if device:
+        if device >= 0:
             try:
+                testeCv.runscript(int(device))
+                """            
                 spec = util.spec_from_file_location("testeCv", "testeCv.py")
                 module = util.module_from_spec(spec)
                 spec.loader.exec_module(module)
@@ -44,6 +47,7 @@ class MainWindow(QWidget):
                     function_to_run(int(device))
                 else:
                     print(f"Function '{function_name}' not found in the module.")
+                """
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
@@ -58,6 +62,7 @@ class MainWindow(QWidget):
 
 def list_available_cameras():
     try:
+        """
         spec = util.spec_from_file_location("testeCv", "testeCv.py")
         module = util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -71,6 +76,10 @@ def list_available_cameras():
             return num_devices
         else:
             print(f"Function '{function_name}' not found in the module.")
+        """
+        num_devices = testeCv.list_available_cameras()
+        print("Numero devices:", num_devices)
+        return num_devices
 
     except Exception as e:
         print(f"Error executing script: {e}")
