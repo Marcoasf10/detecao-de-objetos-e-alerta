@@ -10,7 +10,7 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout()
 
-        self.label = QLabel("Press the button to start record:")
+        self.label = QLabel("Choose device to connect to:")
         self.button = QPushButton("Run script")
         self.button.clicked.connect(self.run_script)
 
@@ -22,34 +22,38 @@ class MainWindow(QWidget):
 
         layout.addWidget(self.label2)
         layout.addWidget(self.button2)
-        layout.addWidget(self.comboBox)
         layout.addWidget(self.label)
+        layout.addWidget(self.comboBox)
         layout.addWidget(self.button)
 
         self.setLayout(layout)
 
     def run_script(self):
-        try:
-            spec = util.spec_from_file_location("testeCv", "testeCv.py")
-            module = util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+        device = self.comboBox.currentData()
+        if device:
+            try:
+                spec = util.spec_from_file_location("testeCv", "testeCv.py")
+                module = util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-            # Here you can specify the function you want to run dynamically
-            function_name = "runscript"
+                # Here you can specify the function you want to run dynamically
+                function_name = "runscript"
 
-            if hasattr(module, function_name):
-                function_to_run = getattr(module, function_name)
-                function_to_run()
-            else:
-                print(f"Function '{function_name}' not found in the module.")
-        except Exception as e:
-            print(f"Error executing script: {e}")
+                if hasattr(module, function_name):
+                    function_to_run = getattr(module, function_name)
+                    function_to_run(int(device))
+                else:
+                    print(f"Function '{function_name}' not found in the module.")
+            except Exception as e:
+                print(f"Error executing script: {e}")
+        else:
+            print("No device selected.")
 
     def update_camera_list(self):
         num_devices = list_available_cameras()
         self.comboBox.clear()
         for i in range(num_devices):
-            self.comboBox.addItem("Device : " + str(i))
+            self.comboBox.addItem("Device : " + str(i), i)
 
 
 def list_available_cameras():

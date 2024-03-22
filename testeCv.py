@@ -6,11 +6,10 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-def runscript():
-    # load a pretrained model (recommended for training)
+def runscript(device):
     model = YOLO("yolov8s.pt")
     indexPerson = list(model.names.values()).index("person")
-    cap = cv2.VideoCapture(1)  # Assuming you're capturing from a webcam
+    cap = cv2.VideoCapture(device)
     y1Anterior = 0
     x1Anterior = 0
     x2Anterior = 0
