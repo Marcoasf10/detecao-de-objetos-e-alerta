@@ -4,11 +4,12 @@ import time
 from ultralytics import YOLO
 import cv2
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def runscript(device):
     model = YOLO("yolov8s.pt")
-    indexPerson = list(model.names.values()).index("person")
+    indexPerson = list(model.names.values()).index("mouse")
     cap = cv2.VideoCapture(device)
     y1Anterior = 0
     x1Anterior = 0
@@ -67,10 +68,23 @@ def runscript(device):
     cap.release()
     cv2.destroyAllWindows()
 
+    x1_coordinates = np.array(x1_coordinates)
+    y1_coordinates = np.array(y1_coordinates)
+
+    x1_std = np.std(x1_coordinates)
+    y1_std = np.std(y1_coordinates)
+
+    plt.axhline(y=np.mean(x1_coordinates) + x1_std, color='grey', linestyle='--', label='x1 Std Dev')
+    plt.axhline(y=np.mean(y1_coordinates) + y1_std, color='grey', linestyle='--', label='y1 Std Dev')
+
     plt.plot(range(len(x1_coordinates)),
              x1_coordinates, label='x1', color='blue')
     plt.plot(range(len(y1_coordinates)),
              y1_coordinates, label='y1', color='red')
+
+    plt.text(0.5, 0.9, f'Std of x1: {x1_std:.2f}', transform=plt.gca().transAxes, color='blue')
+    plt.text(0.5, 0.85, f'Std of y1: {y1_std:.2f}', transform=plt.gca().transAxes, color='red')
+
     plt.title('x1 and y1 Coordinates over Time')
     plt.xlabel('Frame')
     plt.ylabel('Coordinate Value')

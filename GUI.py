@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import *
-from importlib import util
 import testeCv
 
 
@@ -34,20 +33,6 @@ class MainWindow(QWidget):
         if device >= 0:
             try:
                 testeCv.runscript(int(device))
-                """            
-                spec = util.spec_from_file_location("testeCv", "testeCv.py")
-                module = util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-
-                # Here you can specify the function you want to run dynamically
-                function_name = "runscript"
-
-                if hasattr(module, function_name):
-                    function_to_run = getattr(module, function_name)
-                    function_to_run(int(device))
-                else:
-                    print(f"Function '{function_name}' not found in the module.")
-                """
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
@@ -62,23 +47,7 @@ class MainWindow(QWidget):
 
 def list_available_cameras():
     try:
-        """
-        spec = util.spec_from_file_location("testeCv", "testeCv.py")
-        module = util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        function_name = "list_available_cameras"
-
-        if hasattr(module, function_name):
-            function_to_run = getattr(module, function_name)
-            num_devices = function_to_run()
-            print("Numero devices:", num_devices)
-            return num_devices
-        else:
-            print(f"Function '{function_name}' not found in the module.")
-        """
         num_devices = testeCv.list_available_cameras()
-        print("Numero devices:", num_devices)
         return num_devices
 
     except Exception as e:
