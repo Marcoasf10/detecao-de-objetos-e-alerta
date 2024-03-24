@@ -9,7 +9,9 @@ import numpy as np
 
 def runscript(device):
     model = YOLO("yolov8s.pt")
-    indexPerson = list(model.names.values()).index("mouse")
+    indexMouse = list(model.names.values()).index("mouse")
+    indexPerson = list(model.names.values()).index("person")
+    listObjToFind = [indexMouse, indexPerson]
     cap = cv2.VideoCapture(device)
     y1Anterior = 0
     x1Anterior = 0
@@ -36,7 +38,7 @@ def runscript(device):
             break
 
         results = model.track(
-            frame, show=True, classes=indexPerson, stream=False, persist=True)
+            frame, show=True, classes=listObjToFind, stream=False, persist=True)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
