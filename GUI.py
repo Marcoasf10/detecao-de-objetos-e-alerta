@@ -1,6 +1,6 @@
-import sys
-
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt
+
 import testeCv
 
 
@@ -17,15 +17,25 @@ class MainWindow(QWidget):
 
         self.label = QLabel("Choose device to connect to:")
         self.objectsSelected = QListWidget()
+        self.objectsSelected.setSelectionMode(QAbstractItemView.MultiSelection)
         self.availableObjects = QListWidget()
+        self.availableObjects.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.search_bar = QLineEdit()
+        self.search_bar2 = QLineEdit()
+        self.search_bar.setPlaceholderText("Search...")
+        self.search_bar2.setPlaceholderText("Search...")
+        self.search_bar.textChanged.connect(self.filter_list)
+        self.search_bar2.textChanged.connect(self.filter_list_selected)
         self.label2 = QLabel("Objects to detect: ")
-        self.availableObjects.addItems(['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'])
-        self.objectsSelected.currentTextChanged.connect(self.text_changed)
-        self.availableObjects.currentTextChanged.connect(self.text_changed)
+        self.class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
+        self.class_names_selected = []
+        self.availableObjects.addItems(sorted(self.class_names))
 
         self.button = QPushButton("Start Detection")
         self.buttonRemove = QPushButton("Remove (-)")
         self.buttonAdd = QPushButton("Add (+)")
+        self.buttonAdd.clicked.connect(self.buttonAddf)
+        self.buttonRemove.clicked.connect(self.buttonRemovef)
         self.buttonTrain = QPushButton("Train new Object")
         self.button.clicked.connect(self.run_script)
 
@@ -34,8 +44,10 @@ class MainWindow(QWidget):
         self.button2 = QPushButton("Search Devices")
         self.button2.clicked.connect(self.update_camera_list)
 
+        layout3.addWidget(self.search_bar2)
         layout3.addWidget(self.objectsSelected)
         layout3.addWidget(self.buttonRemove)
+        layout4.addWidget(self.search_bar)
         layout4.addWidget(self.availableObjects)
         layout4.addWidget(self.buttonAdd)
         layout2.addLayout(layout3)
@@ -75,8 +87,40 @@ class MainWindow(QWidget):
             print(f"Error executing script: {e}")
             return 0
 
-    def text_changed(self, s):
-        print("Current text:", s)
+    def filter_list(self):
+        search_text = self.search_bar.text().lower()
+        self.availableObjects.clear()
+        filtered_items = [item for item in self.class_names if search_text in item.lower()]
+        self.availableObjects.addItems(sorted(filtered_items))
+
+    def filter_list_selected(self):
+        print(self.class_names_selected)
+        search_text = self.search_bar2.text().lower()
+        self.objectsSelected.clear()
+        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
+        self.objectsSelected.addItems(sorted(filtered_items))
+
+    def buttonAddf(self):
+        selected_items = self.availableObjects.selectedItems()
+        for item in selected_items:
+            if self.objectsSelected.findItems(item.text(), Qt.MatchExactly) == []:
+                self.objectsSelected.addItem(item.text())
+                self.availableObjects.takeItem(self.availableObjects.row(item))
+                self.class_names.remove(item.text())
+                self.class_names_selected.append(item.text())
+        print(self.class_names_selected)
+        self.repaint()
+
+    def buttonRemovef(self):
+        selected_items = self.objectsSelected.selectedItems()
+        for item in selected_items:
+            if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
+                self.objectsSelected.takeItem(self.objectsSelected.row(item))
+                self.availableObjects.addItem(item.text())
+                self.class_names_selected.remove(item.text())
+        self.availableObjects.sortItems()
+        self.repaint()
+
 
 if __name__ == '__main__':
     app = QApplication([])
