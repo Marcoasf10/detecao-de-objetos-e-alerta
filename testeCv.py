@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def runscript(device):
+def runscript(device, classes):
     model = YOLO("yolov8s.pt")
     indexMouse = list(model.names.values()).index("mouse")
     indexPerson = list(model.names.values()).index("person")

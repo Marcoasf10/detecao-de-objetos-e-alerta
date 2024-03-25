@@ -40,7 +40,7 @@ class MainWindow(QWidget):
         self.button.clicked.connect(self.run_script)
 
         self.listDevices = QListWidget()
-
+        self.listDevices.setSelectionMode(QAbstractItemView.MultiSelection)
         self.button2 = QPushButton("Search Devices")
         self.button2.clicked.connect(self.update_camera_list)
 
@@ -62,10 +62,10 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def run_script(self):
-        device = self.comboBox.currentData()
-        if device >= 0:
+        devices = self.listDevices.selectedItems()
+        if devices >= 0:
             try:
-                testeCv.runscript(int(device))
+                testeCv.runscript(int(devices), self.class_names_selected)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
