@@ -27,7 +27,7 @@ class MainWindow(QWidget):
         self.search_bar.textChanged.connect(self.filter_list)
         self.search_bar2.textChanged.connect(self.filter_list_selected)
         self.label2 = QLabel("Objects to detect: ")
-        self.class_names = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
+        self.class_names = testeCv.get_classes()
         self.class_names_selected = []
         self.availableObjects.addItems(sorted(self.class_names))
 
@@ -62,10 +62,10 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def run_script(self):
-        devices = self.listDevices.selectedItems()
+        devices = 0
         if devices >= 0:
             try:
-                testeCv.runscript(int(devices), self.class_names_selected)
+                testeCv.runscript(0, self.class_names_selected)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
