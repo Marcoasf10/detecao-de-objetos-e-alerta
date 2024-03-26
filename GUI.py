@@ -28,6 +28,8 @@ class MainWindow(QWidget):
         self.search_bar2.textChanged.connect(self.filter_list_selected)
         self.label2 = QLabel("Objects to detect: ")
         self.label3 = QLabel("Searching for devices...")
+        self.label4 = QLabel("Objects to find:")
+        self.label5 = QLabel("Objects available:")
         self.label3.hide()
         self.class_names = testeCv.get_classes()
         self.class_names_selected = []
@@ -46,9 +48,11 @@ class MainWindow(QWidget):
         self.button2 = QPushButton("Search Devices")
         self.button2.clicked.connect(self.update_camera_list)
 
+        layout3.addWidget(self.label4)
         layout3.addWidget(self.search_bar2)
         layout3.addWidget(self.objectsSelected)
         layout3.addWidget(self.buttonRemove)
+        layout4.addWidget(self.label5)
         layout4.addWidget(self.search_bar)
         layout4.addWidget(self.availableObjects)
         layout4.addWidget(self.buttonAdd)
