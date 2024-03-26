@@ -47,7 +47,6 @@ def delete_frames():
 
 def predict(device, listObjToFind, graphs):
     local_model = YOLO("yolov8s.pt")
-    print(device)
     cap = cv2.VideoCapture(device)
     y1Anterior = 0
     x1Anterior = 0
@@ -82,7 +81,6 @@ def predict(device, listObjToFind, graphs):
             if coordenadas:
                 x1, y1, x2, y2 = coordenadas.xyxy[0]
                 confiancas.append(coordenadas.conf[0] * 100)
-                print(coordenadas.conf[0])
                 x1_coordinates.append(x1)
                 y1_coordinates.append(y1)
                 x2_coordinates.append(x2)
@@ -194,7 +192,7 @@ def predict(device, listObjToFind, graphs):
         plt.xlabel('Frame')
         plt.ylabel('Confidence Value')
         plt.legend()
-        output_filename = f'graficosTestes/output_confianca_{timestamp}.png'
+        output_filename = f'{device}_graficosTestes/output_confianca_{timestamp}.png'
         plt.savefig(output_filename)
         plt.show()
 
