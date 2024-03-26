@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
-
+from threading import Thread
 import testeCv
 
 
@@ -27,6 +27,8 @@ class MainWindow(QWidget):
         self.search_bar.textChanged.connect(self.filter_list)
         self.search_bar2.textChanged.connect(self.filter_list_selected)
         self.label2 = QLabel("Objects to detect: ")
+        self.label3 = QLabel("Searching for devices...")
+        self.label3.hide()
         self.class_names = testeCv.get_classes()
         self.class_names_selected = []
         self.availableObjects.addItems(sorted(self.class_names))
@@ -56,28 +58,36 @@ class MainWindow(QWidget):
         layout.addLayout(layout2)
         layout.addWidget(self.label)
         layout.addWidget(self.listDevices)
+        layout.addWidget(self.label3)
         layout.addWidget(self.button2)
         layout.addWidget(self.button)
 
         self.setLayout(layout)
 
     def run_script(self):
-        devices = 0
-        if devices >= 0:
+        devices = self.listDevices.selectedItems()
+        if len(devices) > 0:
             try:
-                testeCv.runscript(0, self.class_names_selected)
+                testeCv.runscript(devices, self.class_names_selected)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
             print("No device selected.")
 
     def update_camera_list(self):
+        Thread(target=self.search_for_cameras).start()
+
+
+    def search_for_cameras(self):
+        self.label3.show()
         num_devices = self.list_available_cameras()
         self.listDevices.clear()
         for i in range(num_devices):
             item = "Device : " + str(i)
             self.listDevices.addItem(item)
-            self.listDevices.item(self.listDevices.count() - 1).setData(0, item)
+            self.listDevices.item(self.listDevices.count() - 1).setData(0, item)  # Set display text
+            self.listDevices.item(self.listDevices.count() - 1).setData(1, i)  # Set data
+        self.label3.hide()
 
     def list_available_cameras(self):
         try:
