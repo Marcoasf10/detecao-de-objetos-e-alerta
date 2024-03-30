@@ -73,6 +73,7 @@ class MainWindow(QWidget):
         if len(devices) > 0:
             try:
                 testeCv.runscript(devices, self.class_names_selected)
+                #testeCv.runscriptMac(devices, self.class_names_selected)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:

@@ -8,6 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
+from multiprocessing import Process
 
 model = YOLO("yolov8s.pt")
 
@@ -28,7 +29,21 @@ def runscript(devices, classes, graphs=False):
     delete_frames()
     cv2.destroyAllWindows()
 
+def runscriptMac(devices, classes, graphs=False):
+    processes = []
+    listObjToFind = []
+    for classe in classes:
+        listObjToFind.append(list(model.names.values()).index(classe))
+    for device in devices:
+        process = Process(target=predict, args=(device.data(1), listObjToFind, graphs))
+        process.start()
+        processes.append(process)
 
+    # Wait for all processes to finish
+    for process in processes:
+        process.join()
+    delete_frames()
+    cv2.destroyAllWindows()
 
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -70,15 +85,11 @@ def predict(device, listObjToFind, graphs):
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
-        folder = "frames"
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-        frame_filename = f"{folder}/device_{device}.jpg"
+        frame_filename = f"frames/device_{device}.jpg"
         cv2.imwrite(frame_filename, frame)
         results = local_model.track(
-            f"{folder}/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
-            break
+            f"frames/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
+
         for r in results:
             coordenadas = r.boxes.cpu().numpy()
             if coordenadas:
