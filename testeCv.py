@@ -89,10 +89,13 @@ def predict(device, listObjToFind, graphs):
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
-        frame_filename = f"frames/device_{device}.jpg"
+        folder = "frames"
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        frame_filename = f"{folder}/device_{device}.jpg"
         cv2.imwrite(frame_filename, frame)
         results = local_model.track(
-            f"frames/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
+            f"{folder}/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
@@ -206,7 +209,7 @@ def predict(device, listObjToFind, graphs):
         axs[1, 1].legend()
 
         plt.tight_layout()
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H%M%S")
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
         output_filename = f'graficosTestes/{device}_output_coordenadas_{timestamp}.png'
         plt.savefig(output_filename)
         plt.show()
