@@ -1,3 +1,5 @@
+import time
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 from threading import Thread
@@ -72,8 +74,9 @@ class MainWindow(QWidget):
         devices = self.listDevices.selectedItems()
         if len(devices) > 0:
             try:
-                testeCv.runscript(devices, self.class_names_selected)
-                #testeCv.runscriptMac(devices, self.class_names_selected)
+
+                testeCv.runscript(devices, self.class_names_selected, True)
+                #testeCv.runscriptMac(devices, self.class_names_selected, True)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:

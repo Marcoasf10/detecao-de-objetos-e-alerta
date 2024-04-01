@@ -75,7 +75,10 @@ def predict(device, listObjToFind, graphs):
     y2_coordinates = []
     confiancas = []
 
-    while cap.isOpened() and i < 20:
+    distanciaCanto1Lista = []
+    distanciaCanto2Lista = []
+
+    while cap.isOpened() and i < 40:
         grabbed = cap.grab()
         if not grabbed:  # Se o frame nao for lido corretamente
             print("Error: Unable to grab frame from webcam.")
@@ -89,7 +92,8 @@ def predict(device, listObjToFind, graphs):
         cv2.imwrite(frame_filename, frame)
         results = local_model.track(
             f"frames/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
-
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
+            break
         for r in results:
             coordenadas = r.boxes.cpu().numpy()
             if coordenadas:
@@ -99,18 +103,21 @@ def predict(device, listObjToFind, graphs):
                 y1_coordinates.append(y1)
                 x2_coordinates.append(x2)
                 y2_coordinates.append(y2)
-                if i == 0:
+                if i < 5:
                     x1Anterior = x1
                     y1Anterior = y1
                     x2Anterior = x2
                     y2Anterior = y2
-                else:
+                elif i > 5:
                     distanciaCanto1 = distance(x1Anterior, x1, y1Anterior, y1)
+                    distanciaCanto1Lista.append(distanciaCanto1)
                     distanciaCanto2 = distance(x2Anterior, x2, y2Anterior, y2)
+                    distanciaCanto2Lista.append(distanciaCanto2)
 
                     if distanciaCanto1 <= margem and distanciaCanto2 <= margem:
                         print("Parado")
                     else:
+                        print(distanciaCanto1, distanciaCanto2)
                         print("Mover")
                     x1Anterior = x1
                     y1Anterior = y1
@@ -124,26 +131,36 @@ def predict(device, listObjToFind, graphs):
         y1_coordinates = np.array(y1_coordinates)
         x2_coordinates = np.array(x2_coordinates)
         y2_coordinates = np.array(y2_coordinates)
+        canto1Coordenadas = np.array(distanciaCanto1Lista)
+        canto2Coordenadas = np.array(distanciaCanto2Lista)
 
         x1_std = np.std(x1_coordinates)
         y1_std = np.std(y1_coordinates)
         x2_std = np.std(x2_coordinates)
         y2_std = np.std(y2_coordinates)
+        canto1Coordenadas_std = np.std(canto1Coordenadas)
+        canto2Coordenadas_std = np.std(canto2Coordenadas)
 
         x1_max = np.max(x1_coordinates) - np.mean(x1_coordinates)
         y1_max = np.max(y1_coordinates) - np.mean(y1_coordinates)
         x2_max = np.max(x2_coordinates) - np.mean(x2_coordinates)
         y2_max = np.max(y2_coordinates) - np.mean(y2_coordinates)
+        canto1_max = np.max(canto1Coordenadas) - np.mean(canto1Coordenadas)
+        canto2_max = np.max(canto2Coordenadas) - np.mean(canto2Coordenadas)
 
         x1_min = np.min(x1_coordinates) - np.mean(x1_coordinates)
         y1_min = np.min(y1_coordinates) - np.mean(y1_coordinates)
         x2_min = np.min(x2_coordinates) - np.mean(x2_coordinates)
         y2_min = np.min(y2_coordinates) - np.mean(y2_coordinates)
+        canto1_min = np.min(canto1Coordenadas) - np.mean(canto1Coordenadas)
+        canto2_min = np.min(canto2Coordenadas) - np.mean(canto2Coordenadas)
 
         x1_max_dev = x1_max if x1_max > x1_min else x1_min
         y1_max_dev = y1_max if y1_max > y1_min else y1_min
         x2_max_dev = x2_max if x2_max > x2_min else x2_min
         y2_max_dev = y2_max if y2_max > y2_min else y2_min
+        canto1_max_dev = canto1_max if canto1_max > canto1_min else canto1_min
+        canto2_max_dev = canto2_max if canto2_max > canto2_min else canto2_min
         # Criando subplots
         fig, axs = plt.subplots(2, 2, figsize=(15, 10))
 
@@ -206,7 +223,35 @@ def predict(device, listObjToFind, graphs):
         plt.xlabel('Frame')
         plt.ylabel('Confidence Value')
         plt.legend()
-        output_filename = f'{device}_graficosTestes/output_confianca_{timestamp}.png'
+        output_filename = f'graficosTestes/{device}_output_confianca_{timestamp}.png'
+        plt.savefig(output_filename)
+        plt.show()
+
+        fig2, axs2 = plt.subplots(1, 2, figsize=(15, 10))
+
+        # Gráfico para a distância entre os cantos 1
+        axs2[0].plot(range(len(canto1Coordenadas)), canto1Coordenadas, label='Distância Canto 1', color='blue')
+        axs2[0].axhline(y=np.mean(canto1Coordenadas), color='grey', linestyle='--', label='Canto1 Dist Mean')
+        axs2[0].text(0.5, 0.9, f'Std of Dist Cant1: {canto1Coordenadas_std:.2f}', transform=axs2[0].transAxes, color='black')
+        axs2[0].text(0.5, 0.8, f'Max dev of Dist Cant1: {canto1_max_dev:.2f}', transform=axs2[0].transAxes, color='black')
+        axs2[0].set_title('Distância entre os cantos 1')
+        axs2[0].set_xlabel('Frame')
+        axs2[0].set_ylabel('Distância')
+        axs2[0].legend()
+
+        # Gráfico para a distância entre os cantos 2
+        axs2[1].plot(range(len(canto2Coordenadas)), canto2Coordenadas, label='Distância Canto 2', color='red')
+        axs2[1].axhline(y=np.mean(canto2Coordenadas), color='grey', linestyle='--', label='Canto1 Dist Mean')
+        axs2[1].text(0.5, 0.9, f'Std of Dist Cant2: {canto2Coordenadas_std:.2f}', transform=axs2[1].transAxes, color='black')
+        axs2[1].text(0.5, 0.8, f'Max dev of Dist Cant2: {canto2_max_dev:.2f}', transform=axs2[1].transAxes, color='black')
+        axs2[1].set_title('Distância entre os cantos 2')
+        axs2[1].set_xlabel('Frame')
+        axs2[1].set_ylabel('Distância')
+        axs2[1].legend()
+
+        plt.tight_layout()
+        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H%M%S")
+        output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}.png'
         plt.savefig(output_filename)
         plt.show()
 
