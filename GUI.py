@@ -16,9 +16,16 @@ class MainWindow(QWidget):
         layout2 = QHBoxLayout()
         layout3 = QVBoxLayout()
         layout4 = QVBoxLayout()
+        gridLayout = QGridLayout()
 
         self.label = QLabel("Choose device to connect to:")
         self.objectsSelected = QListWidget()
+        self.graphs = False
+        self.graphCheckBox = QCheckBox()
+        self.graphCheckBox.setText("Graphs")
+
+        self.graphCheckBox.stateChanged.connect(self.checkedGraphs)
+        self.graphCheckBox.move(20, 40)
         self.objectsSelected.setSelectionMode(QAbstractItemView.MultiSelection)
         self.availableObjects = QListWidget()
         self.availableObjects.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -67,6 +74,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.label3)
         layout.addWidget(self.button2)
         layout.addWidget(self.button)
+        layout.addLayout(gridLayout)
+        gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
 
         self.setLayout(layout)
 
@@ -74,9 +83,8 @@ class MainWindow(QWidget):
         devices = self.listDevices.selectedItems()
         if len(devices) > 0:
             try:
-
-                testeCv.runscript(devices, self.class_names_selected, True)
-                #testeCv.runscriptMac(devices, self.class_names_selected, True)
+                #testeCv.runscript(devices, self.class_names_selected, self.graphs)
+                testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
@@ -126,7 +134,6 @@ class MainWindow(QWidget):
                 self.availableObjects.takeItem(self.availableObjects.row(item))
                 self.class_names.remove(item.text())
                 self.class_names_selected.append(item.text())
-        print(self.class_names_selected)
         self.repaint()
 
     def buttonRemovef(self):
@@ -135,9 +142,17 @@ class MainWindow(QWidget):
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
                 self.objectsSelected.takeItem(self.objectsSelected.row(item))
                 self.availableObjects.addItem(item.text())
+                self.class_names.append(item.text())
                 self.class_names_selected.remove(item.text())
         self.availableObjects.sortItems()
         self.repaint()
+
+    def checkedGraphs(self, checked):
+        if checked:
+            self.graphs = True
+        else:
+            self.graphs = False
+        self.show()
 
 
 if __name__ == '__main__':

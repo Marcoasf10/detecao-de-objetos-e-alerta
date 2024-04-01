@@ -30,6 +30,7 @@ def runscript(devices, classes, graphs=False):
     cv2.destroyAllWindows()
 
 def runscriptMac(devices, classes, graphs=False):
+    print(graphs)
     processes = []
     listObjToFind = []
     for classe in classes:
