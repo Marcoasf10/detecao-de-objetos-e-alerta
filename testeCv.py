@@ -62,7 +62,8 @@ def delete_frames():
 
 
 def predict(device, listObjToFind, graphs):
-    local_model = YOLO("yolov8s.pt")
+    modelo = 'yolov8s'
+    local_model = YOLO(modelo)
     cap = cv2.VideoCapture(device)
     y1Anterior = 0
     x1Anterior = 0
@@ -95,7 +96,7 @@ def predict(device, listObjToFind, graphs):
         frame_filename = f"{folder}/device_{device}.jpg"
         cv2.imwrite(frame_filename, frame)
         results = local_model.track(
-            f"{folder}/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True)
+            f"{folder}/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
@@ -210,7 +211,8 @@ def predict(device, listObjToFind, graphs):
 
         plt.tight_layout()
         timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
-        output_filename = f'graficosTestes/{device}_output_coordenadas_{timestamp}.png'
+
+        output_filename = f'graficosTestes/{device}_output_coordenadas_{timestamp}_{modelo}.png'
         plt.savefig(output_filename)
         plt.show()
 
@@ -227,7 +229,7 @@ def predict(device, listObjToFind, graphs):
         plt.xlabel('Frame')
         plt.ylabel('Confidence Value')
         plt.legend()
-        output_filename = f'graficosTestes/{device}_output_confianca_{timestamp}.png'
+        output_filename = f'graficosTestes/{device}_output_confianca_{timestamp}_{modelo}.png'
         plt.savefig(output_filename)
         plt.show()
 
@@ -254,8 +256,7 @@ def predict(device, listObjToFind, graphs):
         axs2[1].legend()
 
         plt.tight_layout()
-        timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H%M%S")
-        output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}.png'
+        output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}_{modelo}.png'
         plt.savefig(output_filename)
         plt.show()
 
