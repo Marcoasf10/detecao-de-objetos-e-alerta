@@ -90,13 +90,13 @@ def predict(device, listObjToFind, graphs):
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
-        folder = "frames"
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-        frame_filename = f"{folder}/device_{device}.jpg"
-        cv2.imwrite(frame_filename, frame)
+        #folder = "frames"
+        #if not os.path.isdir(folder):
+        #    os.makedirs(folder)
+        #frame_filename = f"{folder}/device_{device}.jpg"
+        #cv2.imwrite(frame_filename, frame)
         results = local_model.track(
-            f"{folder}/device_{device}.jpg", show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+            frame, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
@@ -129,7 +129,6 @@ def predict(device, listObjToFind, graphs):
                     x2Anterior = x2
                     y2Anterior = y2
             i += 1
-        time.sleep(0.2)
     cap.release()
     if graphs:
         x1_coordinates = np.array(x1_coordinates)
@@ -177,6 +176,7 @@ def predict(device, listObjToFind, graphs):
         axs[0, 0].set_title('x1 Coordinate over Time')
         axs[0, 0].set_xlabel('Frame')
         axs[0, 0].set_ylabel('Coordinate Value')
+        axs[0, 0].set_yticks(np.arange(round(min(x1_coordinates)) - 10, round(max(x1_coordinates)) + 10, 1))
         axs[0, 0].legend()
 
         # Gráfico para y1
@@ -187,6 +187,7 @@ def predict(device, listObjToFind, graphs):
         axs[0, 1].set_title('y1 Coordinate over Time')
         axs[0, 1].set_xlabel('Frame')
         axs[0, 1].set_ylabel('Coordinate Value')
+        axs[0, 1].set_yticks(np.arange(round(min(y1_coordinates)) - 10, round(max(y1_coordinates)) + 10, 1))
         axs[0, 1].legend()
 
         # Gráfico para x2
@@ -197,6 +198,7 @@ def predict(device, listObjToFind, graphs):
         axs[1, 0].set_title('x2 Coordinate over Time')
         axs[1, 0].set_xlabel('Frame')
         axs[1, 0].set_ylabel('Coordinate Value')
+        axs[1, 0].set_yticks(np.arange(round(min(x2_coordinates)) - 10, round(max(x2_coordinates)) + 10, 1))
         axs[1, 0].legend()
 
         # Gráfico para y2
@@ -207,6 +209,7 @@ def predict(device, listObjToFind, graphs):
         axs[1, 1].set_title('y2 Coordinate over Time')
         axs[1, 1].set_xlabel('Frame')
         axs[1, 1].set_ylabel('Coordinate Value')
+        axs[1, 1].set_yticks(np.arange(round(min(y2_coordinates)) - 10, round(max(y2_coordinates)) + 10, 1))
         axs[1, 1].legend()
 
         plt.tight_layout()
@@ -218,11 +221,11 @@ def predict(device, listObjToFind, graphs):
 
         # Plotando o gráfico para as coordenadas em "confiancas"
         plt.plot(range(len(confiancas)), confiancas, label='Coordinates', color='blue')
-
         # Calculando e adicionando a linha de desvio padrão
         mean = np.mean(confiancas)
         plt.axhline(y=np.mean(confiancas), color='grey', linestyle='--', label='Conf Mean')
-        plt.text(0.5, 0.9, f'Mean: {mean:.2f}', transform=plt.gca().transAxes, color='blue')
+        plt.text(0.5, 0.2, f'Mean: {mean:.2f}', transform=plt.gca().transAxes, color='blue')
+        plt.ylim(0, 100)
 
         # Adicionando legendas e rótulos
         plt.title('Confidence over time')
@@ -243,6 +246,7 @@ def predict(device, listObjToFind, graphs):
         axs2[0].set_title('Distância entre os cantos 1')
         axs2[0].set_xlabel('Frame')
         axs2[0].set_ylabel('Distância')
+        axs2[0].set_yticks(np.arange(0, round(max(canto1Coordenadas)) + 8, 1))
         axs2[0].legend()
 
         # Gráfico para a distância entre os cantos 2
@@ -253,6 +257,7 @@ def predict(device, listObjToFind, graphs):
         axs2[1].set_title('Distância entre os cantos 2')
         axs2[1].set_xlabel('Frame')
         axs2[1].set_ylabel('Distância')
+        axs2[1].set_yticks(np.arange(0, round(max(canto2Coordenadas)) + 8, 1))
         axs2[1].legend()
 
         plt.tight_layout()
