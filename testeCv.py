@@ -270,7 +270,7 @@ def list_available_cameras():
     num_devices = 0
     while True:
         try:
-            cap = cv2.VideoCapture(num_devices)
+            cap = cv2.VideoCapture(num_devices).getBackendName()
             if cap.isOpened():
                 print(f"Camera {num_devices}: Available")
                 cap.release()
