@@ -236,7 +236,7 @@ def predict(device, listObjToFind, graphs):
         plt.savefig(output_filename)
         plt.show()
 
-        fig2, axs2 = plt.subplots(1, 2, figsize=(15, 10))
+        fig2, axs2 = plt.subplots(1, 2, figsize=(20, 10))
 
         # Gráfico para a distância entre os cantos 1
         axs2[0].plot(range(len(canto1Coordenadas)), canto1Coordenadas, label='Distância Canto 1', color='blue')
