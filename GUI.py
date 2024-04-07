@@ -1,12 +1,13 @@
 import time
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from threading import Thread
 import testeCv
 
 
 class MainWindow(QWidget):
+    thread_finished = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Object Detection")
@@ -80,16 +81,26 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def run_script(self):
+        self.button.setEnabled(False)
         devices = self.listDevices.selectedItems()
         if len(devices) > 0:
             try:
-                #testeCv.runscript(devices, self.class_names_selected, self.graphs)
-                testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
+                thread = Thread(target=self.run_script_thread, args=(devices, False))
+                thread.start()
+                Thread(target=self.wait_for_thread, args=(thread,)).start()
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
             print("No device selected.")
 
+    def wait_for_thread(self, thread):
+        thread.join()
+        self.button.setEnabled(True)
+    def run_script_thread(self, devices,mac):
+        if mac:
+            testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
+        else:
+            testeCv.runscript(devices, self.class_names_selected, self.graphs)
     def update_camera_list(self):
         Thread(target=self.search_for_cameras).start()
 
