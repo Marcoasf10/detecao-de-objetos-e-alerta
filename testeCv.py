@@ -14,13 +14,13 @@ modelo = 'yolov8s'
 model = YOLO(modelo)
 
 
-def runscript(devices, classes, button,graphs=False):
+def runscript(devices, classes,graphs=False):
     threads = []
     listObjToFind = []
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     for device in devices:
-        thread = Thread(target=predict, args=(device.data(1), listObjToFind, graphs))
+        thread = Thread(target=predict, args=(device, listObjToFind, graphs))
         thread.start()
         threads.append(thread)
 
@@ -37,7 +37,7 @@ def runscriptMac(devices, classes, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     for device in devices:
-        process = Process(target=predict, args=(device.data(1), listObjToFind, graphs))
+        process = Process(target=predict, args=(device, listObjToFind, graphs))
         process.start()
         processes.append(process)
 

@@ -81,11 +81,11 @@ class MainWindow(QWidget):
         self.setLayout(layout)
 
     def run_script(self):
-        self.button.setEnabled(False)
-        devices = self.listDevices.selectedItems()
+        devices = [item.data(1) for item in self.listDevices.selectedItems()]
         if len(devices) > 0:
+            self.button.setEnabled(False)
             try:
-                thread = Thread(target=self.run_script_thread, args=(devices, False))
+                thread = Thread(target=self.run_script_thread, args=(devices, True))
                 thread.start()
                 Thread(target=self.wait_for_thread, args=(thread,)).start()
             except Exception as e:
@@ -107,6 +107,7 @@ class MainWindow(QWidget):
 
     def search_for_cameras(self):
         self.label3.show()
+        self.button2.setEnabled(False)
         num_devices = self.list_available_cameras()
         self.listDevices.clear()
         for i in range(num_devices):
@@ -115,6 +116,7 @@ class MainWindow(QWidget):
             self.listDevices.item(self.listDevices.count() - 1).setData(0, item)  # Set display text
             self.listDevices.item(self.listDevices.count() - 1).setData(1, i)  # Set data
         self.label3.hide()
+        self.button2.setEnabled(True)
 
     def list_available_cameras(self):
         try:
