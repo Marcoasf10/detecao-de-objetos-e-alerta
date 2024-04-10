@@ -12,7 +12,9 @@ from multiprocessing import Process
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
-
+grabbed_frames = {}
+retrieved_frames = {}
+caps = {}
 
 def runscript(devices, classes,graphs=False):
     threads = []
@@ -31,7 +33,6 @@ def runscript(devices, classes,graphs=False):
     cv2.destroyAllWindows()
 
 def runscriptMac(devices, classes, graphs=False):
-    print(graphs)
     processes = []
     listObjToFind = []
     for classe in classes:
@@ -47,6 +48,27 @@ def runscriptMac(devices, classes, graphs=False):
     delete_frames()
     cv2.destroyAllWindows()
 
+def runscriptgrabRetrieve(devices, classes, graphs=False):
+    threads = []
+    listObjToFind = []
+    for classe in classes:
+        listObjToFind.append(list(model.names.values()).index(classe))
+    for device in devices:
+        caps[device] = cv2.VideoCapture(device)
+        thread = Thread(target=captureThread, args=(device, caps[device]))
+        thread.start()
+        threads.append(thread)
+
+    interval = 1
+    while interval < 10:
+        retrieveFrames(devices)
+        time.sleep(interval)
+        interval += 1
+
+    for thread in threads:
+        thread.join()
+    # cv2.destroyAllWindows()
+
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
@@ -61,6 +83,27 @@ def delete_frames():
         except Exception as e:
             print(f"Error deleting {file_path}: {e}")
 
+
+def captureThread(device, cap):
+    print(f"device {device} capturing")
+    while cap.isOpened():
+        grabbed = cap.grab()
+        if not grabbed:
+            print("Error: Unable to grab frame from webcam.")
+            grabbed_frames[device] = -1
+        grabbed_frames[device] = grabbed
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
+            break
+    cap.release()
+
+def retrieveFrames(devices):
+    for device in devices:
+        ret, frame = caps[device].retrieve()
+        if ret:
+            retrieved_frames[device] = frame
+            cv2.imshow(f"Device {device}", frame)
+        else:
+            retrieved_frames[device] = -1
 
 def predict(device, listObjToFind, graphs):
     canto1Mapper = dict()

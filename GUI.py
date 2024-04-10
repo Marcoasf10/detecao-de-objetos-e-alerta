@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 from threading import Thread
 import testeCv
-
+from multiprocessing import Process
 
 class MainWindow(QWidget):
     thread_finished = pyqtSignal()
@@ -85,9 +85,9 @@ class MainWindow(QWidget):
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
-                thread = Thread(target=self.run_script_thread, args=(devices, True))
-                thread.start()
-                Thread(target=self.wait_for_thread, args=(thread,)).start()
+                process = Process(target=self.run_script_thread, args=(devices, True, self.class_names_selected, self.graphs))
+                process.start()
+                Thread(target=self.wait_for_thread, args=(process,)).start()
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
@@ -96,11 +96,14 @@ class MainWindow(QWidget):
     def wait_for_thread(self, thread):
         thread.join()
         self.button.setEnabled(True)
-    def run_script_thread(self, devices,mac):
+
+    @staticmethod
+    def run_script_thread(self, devices,mac, selected, graphs):
         if mac:
-            testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
+            testeCv.runscriptgrabRetrieve(devices, selected, graphs)
+            #testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
         else:
-            testeCv.runscript(devices, self.class_names_selected, self.graphs)
+            testeCv.runscript(devices, selected,graphs)
     def update_camera_list(self):
         Thread(target=self.search_for_cameras).start()
 
