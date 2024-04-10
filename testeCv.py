@@ -48,6 +48,24 @@ def runscriptMac(devices, classes, graphs=False):
     delete_frames()
     cv2.destroyAllWindows()
 
+def runscriptSingle(devices, classes, graphs=False):
+    listObjToFind = []
+    for classe in classes:
+        listObjToFind.append(list(model.names.values()).index(classe))
+    interval = 1
+    while interval < 10:
+        for device in devices:
+            cap = cv2.VideoCapture(device)
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    print("Error: Unable to retrieve frame from webcam.")
+                    break
+                predictRetrieve(frame, listObjToFind, graphs)
+            cap.release()
+        time.sleep(interval)
+        interval += 1
+
 def runscriptgrabRetrieve(devices, classes, graphs=False):
     threads = []
     listObjToFind = []
@@ -64,7 +82,8 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
         for frame in retrieved_frames:
-            predictRetrieve(frame, listObjToFind, graphs)
+            if frame != -1:
+                predictRetrieve(frame, listObjToFind, graphs)
         time.sleep(interval)
         interval += 1
 
@@ -88,7 +107,6 @@ def delete_frames():
 
 
 def captureThread(device, cap):
-    print(f"device {device} capturing")
     while cap.isOpened():
         grabbed = cap.grab()
         if not grabbed:
@@ -166,7 +184,7 @@ def predict(device, listObjToFind, graphs):
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
 
-def predictRetrieve(frames, listObjToFind, graphs):
+def predictRetrieve(frame, listObjToFind, graphs):
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -180,7 +198,7 @@ def predictRetrieve(frames, listObjToFind, graphs):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    results = local_model.track(frames, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+    results = local_model.track(frame, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
 
     for r in results:
         boxes = r.boxes.cpu().numpy()
