@@ -62,6 +62,9 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
     interval = 1
     while interval < 10:
         retrieveFrames(devices)
+        #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
+        for frame in retrieved_frames:
+            predictRetrieve(frame, listObjToFind, graphs)
         time.sleep(interval)
         interval += 1
 
@@ -92,8 +95,6 @@ def captureThread(device, cap):
             print("Error: Unable to grab frame from webcam.")
             grabbed_frames[device] = -1
         grabbed_frames[device] = grabbed
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
-            break
     cap.release()
 
 def retrieveFrames(devices):
@@ -101,7 +102,6 @@ def retrieveFrames(devices):
         ret, frame = caps[device].retrieve()
         if ret:
             retrieved_frames[device] = frame
-            cv2.imshow(f"Device {device}", frame)
         else:
             retrieved_frames[device] = -1
 
@@ -165,6 +165,51 @@ def predict(device, listObjToFind, graphs):
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
+
+def predictRetrieve(frames, listObjToFind, graphs):
+    canto1Mapper = dict()
+    canto2Mapper = dict()
+    local_model = YOLO(modelo)
+    i = 0
+    margem = 4
+    x1_coordinates = []
+    y1_coordinates = []
+    x2_coordinates = []
+    y2_coordinates = []
+    confiancas = []
+    distanciaCanto1Lista = []
+    distanciaCanto2Lista = []
+
+    results = local_model.track(frames, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+
+    for r in results:
+        boxes = r.boxes.cpu().numpy()
+        if not boxes or boxes.id is None or boxes.id.size == 0:
+            continue
+        if boxes:
+            for f in range(boxes.id.size):
+                id = boxes.id[f]
+                x1, y1, x2, y2 = boxes.xyxy[f]
+                if id not in canto1Mapper and id not in canto2Mapper:
+                    canto1Mapper[id] = (x1, y1, -1)
+                    canto2Mapper[id] = (x2, y2, -1)
+                canto1Mapper[id] = (x1, y1, distance(canto1Mapper[id][0], x1, canto1Mapper[id][1], y1))
+                canto2Mapper[id] = (x2, y2, distance(canto2Mapper[id][0], x2, canto2Mapper[id][1], y2))
+                if canto1Mapper[id][2] == -1 and canto2Mapper[id][2] == -1:
+                    continue
+                if graphs:
+                    confiancas.append(boxes.conf[0] * 100)
+                    x1_coordinates.append(x1)
+                    y1_coordinates.append(y1)
+                    x2_coordinates.append(x2)
+                    y2_coordinates.append(y2)
+                    distanciaCanto1Lista.append(canto1Mapper[0][2])
+                    distanciaCanto2Lista.append(canto2Mapper[0][2])
+                if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
+                    print(f"ID: {int(id)} -> Parado")
+                else:
+                    print(f"ID: {int(id)} -> Mover")
+        i += 1
 
 def list_available_cameras():
     num_devices = 0
