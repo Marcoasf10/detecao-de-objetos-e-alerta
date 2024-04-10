@@ -85,7 +85,7 @@ class MainWindow(QWidget):
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
-                process = Process(target=self.run_script_thread, args=(devices, True, self.class_names_selected, self.graphs))
+                process = Process(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True))
                 process.start()
                 Thread(target=self.wait_for_thread, args=(process,)).start()
             except Exception as e:
@@ -98,7 +98,7 @@ class MainWindow(QWidget):
         self.button.setEnabled(True)
 
     @staticmethod
-    def run_script_thread(self, devices,mac, selected, graphs):
+    def run_script_thread(devices, selected, graphs, mac):
         if mac:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
