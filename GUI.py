@@ -100,8 +100,8 @@ class MainWindow(QWidget):
     @staticmethod
     def run_script_thread(devices, selected, graphs, mac):
         if mac:
-            testeCv.runscriptSingle(devices, selected, graphs)
-            #testeCv.runscriptgrabRetrieve(devices, selected, graphs)
+            #testeCv.runscriptSingle(devices, selected, graphs)
+            testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)

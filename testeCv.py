@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
 from multiprocessing import Process
+from pynput import keyboard
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -73,23 +74,18 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         listObjToFind.append(list(model.names.values()).index(classe))
     for device in devices:
         caps[device] = cv2.VideoCapture(device)
-        thread = Thread(target=captureThread, args=(device, caps[device]))
+        thread = Thread(target=captureThread, args=(device,))
         thread.start()
         threads.append(thread)
 
     interval = 1
-    while interval < 10:
+    while True:
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
-        for frame in retrieved_frames:
-            if frame != -1:
-                predictRetrieve(frame, listObjToFind, graphs)
-        time.sleep(interval)
+        for frame in retrieved_frames.values():
+            predictRetrieve(frame, listObjToFind, graphs)
         interval += 1
-
-    for thread in threads:
-        thread.join()
-    # cv2.destroyAllWindows()
+    print("acabou")
 
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -106,22 +102,19 @@ def delete_frames():
             print(f"Error deleting {file_path}: {e}")
 
 
-def captureThread(device, cap):
-    while cap.isOpened():
-        grabbed = cap.grab()
-        if not grabbed:
-            print("Error: Unable to grab frame from webcam.")
-            grabbed_frames[device] = -1
-        grabbed_frames[device] = grabbed
-    cap.release()
+def captureThread(device):
+    while caps[device].isOpened():
+        caps[device].grab()
+    caps[device].release()
 
 def retrieveFrames(devices):
+    i = 0
     for device in devices:
-        ret, frame = caps[device].retrieve()
-        if ret:
-            retrieved_frames[device] = frame
-        else:
-            retrieved_frames[device] = -1
+        ret = False
+        while not ret and i <= 10:
+            ret, frame = caps[device].retrieve()
+            i += 1
+        retrieved_frames[device] = frame
 
 def predict(device, listObjToFind, graphs):
     canto1Mapper = dict()
@@ -197,7 +190,6 @@ def predictRetrieve(frame, listObjToFind, graphs):
     confiancas = []
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
-
     results = local_model.track(frame, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
 
     for r in results:
