@@ -1,6 +1,7 @@
 import datetime
 import math
 import os
+import threading
 import time
 
 from ultralytics import YOLO
@@ -8,16 +9,25 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
-from multiprocessing import Process
-from pynput import keyboard
+from multiprocessing import Process, Manager
+import psutil
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
 grabbed_frames = {}
 retrieved_frames = {}
 caps = {}
+cpu_usage = []
+memory_usage = []
+cpu_inicial = psutil.cpu_percent()
+memory_inicial = psutil.virtual_memory().percent
+stop = False
+stop_lock = threading.Lock()
 
 def runscript(devices, classes,graphs=False):
+    global cpu_usage
+    global memory_usage
+    start_time = time.time()
     threads = []
     listObjToFind = []
     for classe in classes:
@@ -30,46 +40,61 @@ def runscript(devices, classes,graphs=False):
     # Wait for all threads to finish
     for thread in threads:
         thread.join()
+    print(len(cpu_usage))
+    graficoPerformance(start_time, cpu_usage, memory_usage)
     delete_frames()
     cv2.destroyAllWindows()
 
 def runscriptMac(devices, classes, graphs=False):
-    processes = []
-    listObjToFind = []
-    for classe in classes:
-        listObjToFind.append(list(model.names.values()).index(classe))
-    for device in devices:
-        process = Process(target=predict, args=(device, listObjToFind, graphs))
-        process.start()
-        processes.append(process)
-
-    # Wait for all processes to finish
-    for process in processes:
-        process.join()
-    delete_frames()
-    cv2.destroyAllWindows()
-
+    with Manager() as manager:
+        cpu_usage = manager.list()
+        memory_usage = manager.list()
+        start_time = time.time()
+        processes = []
+        listObjToFind = []
+        for classe in classes:
+            listObjToFind.append(list(model.names.values()).index(classe))
+        for device in devices:
+            process = Process(target=predict, args=(device, listObjToFind, graphs, cpu_usage, memory_usage))
+            process.start()
+            processes.append(process)
+        # Wait for all processes to finish
+        for process in processes:
+            process.join()
+        graficoPerformance(start_time, cpu_usage, memory_usage)
+        cv2.destroyAllWindows()
 def runscriptSingle(devices, classes, graphs=False):
+    global cpu_usage
+    global memory_usage
+    start_time = time.time()
     listObjToFind = []
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
-    interval = 1
-    while interval < 10:
+    interval = 0
+    while interval < 40:
         for device in devices:
             cap = cv2.VideoCapture(device)
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    print("Error: Unable to retrieve frame from webcam.")
-                    break
-                predictRetrieve(frame, listObjToFind, graphs)
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: Unable to retrieve frame from webcam.")
+                break
+            predictRetrieve(frame, listObjToFind, graphs)
+            cpu_usage.append(psutil.cpu_percent())
+            memory_usage.append(psutil.virtual_memory().percent)
             cap.release()
-        time.sleep(interval)
+        print(interval)
         interval += 1
 
+    graficoPerformance(start_time, cpu_usage, memory_usage)
+    cv2.destroyAllWindows()
+
 def runscriptgrabRetrieve(devices, classes, graphs=False):
+    global stop
+    global cpu_usage
+    global memory_usage
     threads = []
     listObjToFind = []
+    start_time = time.time()
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     for device in devices:
@@ -78,14 +103,21 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         thread.start()
         threads.append(thread)
 
-    interval = 1
-    while True:
+    interval = 0
+    while interval < 10:
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
         for frame in retrieved_frames.values():
             predictRetrieve(frame, listObjToFind, graphs)
+
+        cpu_usage.append(psutil.cpu_percent())
+        memory_usage.append(psutil.virtual_memory().percent)
+        print(interval)
         interval += 1
-    print("acabou")
+    graficoPerformance(start_time, cpu_usage, memory_usage)
+    with stop_lock:
+        stop = True
+    cv2.destroyAllWindows()
 
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -103,9 +135,19 @@ def delete_frames():
 
 
 def captureThread(device):
+    global stop
+    i = 0
     while caps[device].isOpened():
+        with stop_lock:
+            if i % 20 == 0:
+                print(stop)
+            if stop:
+                break
         caps[device].grab()
+        i+=1
     caps[device].release()
+    with stop_lock:
+        stop = False
 
 def retrieveFrames(devices):
     i = 0
@@ -116,7 +158,7 @@ def retrieveFrames(devices):
             i += 1
         retrieved_frames[device] = frame
 
-def predict(device, listObjToFind, graphs):
+def predict(device, listObjToFind, graphs, cpu_shared, memory_shared):
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -148,6 +190,9 @@ def predict(device, listObjToFind, graphs):
         for r in results:
             boxes = r.boxes.cpu().numpy()
             if not boxes or boxes.id is None or boxes.id.size == 0:
+                cpu_shared.append(psutil.cpu_percent())
+                memory_shared.append(psutil.virtual_memory().percent)
+                i += 1
                 continue
             if boxes:
                 for f in range(boxes.id.size):
@@ -172,6 +217,8 @@ def predict(device, listObjToFind, graphs):
                         print(f"ID: {int(id)} -> Parado")
                     else:
                         print(f"ID: {int(id)} -> Mover")
+            cpu_usage.append(psutil.cpu_percent())
+            memory_usage.append(psutil.virtual_memory().percent)
             i += 1
     cap.release()
     if graphs:
@@ -381,5 +428,45 @@ def criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates
 
     plt.tight_layout()
     output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}_{modelo}.png'
+    plt.savefig(output_filename)
+    plt.show()
+
+def graficoPerformance(start_time, cpu_usage, memory_usage):
+    duracao = time.time() - start_time
+    duracao_minutos = int(duracao // 60)
+    duracao_segundos = int(duracao % 60)
+    fig, axs = plt.subplots(1, 2, figsize=(15, 10))
+    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+    cpu_usage_array = np.array(cpu_usage)
+    memory_usage_array = np.array(memory_usage)
+
+
+    # Gráfico para a distância entre os cantos 1
+    axs[0].plot(range(len(cpu_usage_array)), cpu_usage_array, label='CPU Usage', color='blue')
+    axs[0].axhline(y=np.mean(cpu_usage_array), color='grey', linestyle='--', label='CPU Usage Mean')
+    axs[0].text(0.5, 0.9, f'Inicial CPU (%): {cpu_inicial:.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.8, f'Max CPU Usage (%): {max(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.7, f'Min CPU Usage (%): {min(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].set_title('CPU Usage (%)')
+    axs[0].set_xlabel('Frame')
+    axs[0].set_ylabel('Usage')
+    axs[0].set_yticks(np.arange(0, 100, 10))
+    axs[0].legend()
+
+    # Gráfico para a distância entre os cantos 2
+    axs[1].plot(range(len(memory_usage_array)), memory_usage_array, label='CPU Usage', color='blue')
+    axs[1].axhline(y=np.mean(memory_usage_array), color='grey', linestyle='--', label='CPU Usage Mean')
+    axs[1].text(0.5, 0.5, f'Inicial Memory (%): {memory_inicial:.2f}', transform=axs[1].transAxes, color='black')
+    axs[1].text(0.5, 0.4, f'Max Memory usage (%): {max(memory_usage_array):.2f}', transform=axs[1].transAxes, color='black')
+    axs[1].text(0.5, 0.3, f'Min Memory usage (%): {min(memory_usage_array):.2f}', transform=axs[1].transAxes, color='black')
+    axs[1].set_title('Memory Usage (%)')
+    axs[1].set_xlabel('Frame')
+    axs[1].set_ylabel('Usage')
+    axs[1].set_yticks(np.arange(0, 100, 10))
+    axs[1].legend()
+
+    plt.suptitle(f'Desempenho do Sistema duração: {duracao_minutos}m:{duracao_segundos}s', fontsize=16)
+    plt.tight_layout()
+    output_filename = f'graficosTestes/performanceGraph_{timestamp}_{modelo}.png'
     plt.savefig(output_filename)
     plt.show()

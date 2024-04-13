@@ -102,7 +102,7 @@ class MainWindow(QWidget):
         if mac:
             #testeCv.runscriptSingle(devices, selected, graphs)
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
-            #testeCv.runscriptMac(devices, self.class_names_selected, self.graphs)
+            #testeCv.runscriptMac(devices, selected, graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
