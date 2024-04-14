@@ -104,7 +104,7 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         threads.append(thread)
 
     interval = 0
-    while interval < 10:
+    while interval < 40:
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
         for frame in retrieved_frames.values():
