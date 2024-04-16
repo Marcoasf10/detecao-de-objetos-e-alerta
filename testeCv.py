@@ -61,7 +61,7 @@ def runscriptMac(devices, classes, graphs=False):
         # Wait for all processes to finish
         for process in processes:
             process.join()
-        graficoPerformance(start_time, cpu_usage, memory_usage)
+        #graficoPerformance(start_time, cpu_usage, memory_usage)
         cv2.destroyAllWindows()
 def runscriptSingle(devices, classes, graphs=False):
     global cpu_usage
@@ -85,7 +85,7 @@ def runscriptSingle(devices, classes, graphs=False):
         print(interval)
         interval += 1
 
-    graficoPerformance(start_time, cpu_usage, memory_usage)
+    #graficoPerformance(start_time, cpu_usage, memory_usage)
     cv2.destroyAllWindows()
 
 def runscriptgrabRetrieve(devices, classes, graphs=False):
@@ -105,6 +105,7 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
 
     interval = 0
     while interval < 40:
+        time.sleep(1)
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
         for frame in retrieved_frames.values():
@@ -114,7 +115,7 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         memory_usage.append(psutil.virtual_memory().percent)
         print(interval)
         interval += 1
-    graficoPerformance(start_time, cpu_usage, memory_usage)
+    #graficoPerformance(start_time, cpu_usage, memory_usage)
     with stop_lock:
         stop = True
     cv2.destroyAllWindows()

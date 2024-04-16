@@ -109,6 +109,9 @@ class MainWindow(QWidget):
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
+        devices.append("http://109.247.15.178:6001/mjpg/video.mjpg")
+        devices.append("http://94.30.51.166:50000/mjpg/video.mjpg")
+        devices.append("http://188.113.184.246:47544/mjpg/video.mjpg")
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
@@ -128,8 +131,8 @@ class MainWindow(QWidget):
     def run_script_thread(devices, selected, graphs, mac):
         if mac:
             #testeCv.runscriptSingle(devices, selected, graphs)
-            #testeCv.runscriptgrabRetrieve(devices, selected, graphs)
-            testeCv.runscriptMac(devices, selected, graphs)
+            testeCv.runscriptgrabRetrieve(devices, selected, graphs)
+            #testeCv.runscriptMac(devices, selected, graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
