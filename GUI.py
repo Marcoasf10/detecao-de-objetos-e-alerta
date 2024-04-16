@@ -1,10 +1,29 @@
 import time
 
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 from threading import Thread
 import testeCv
 from multiprocessing import Process
+
+class ImageViewerWindow(QMainWindow):
+    def __init__(self, image_path):
+        super().__init__()
+        self.setWindowTitle("Image Viewer")
+        self.setGeometry(100, 100, 400, 400)
+
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        layout = QVBoxLayout()
+        self.label = QLabel()
+        pixmap = QPixmap(image_path)
+        pixmap = pixmap.scaled(self.size(), aspectRatioMode=1)
+        self.label.setPixmap(pixmap)
+        layout.addWidget(self.label)
+
+        self.central_widget.setLayout(layout)
 
 class MainWindow(QWidget):
     thread_finished = pyqtSignal()
@@ -57,6 +76,8 @@ class MainWindow(QWidget):
         self.listDevices.setSelectionMode(QAbstractItemView.MultiSelection)
         self.button2 = QPushButton("Search Devices")
         self.button2.clicked.connect(self.update_camera_list)
+        self.button_show_image = QPushButton("Show Image")
+        self.button_show_image.clicked.connect(self.show_image)
 
         layout3.addWidget(self.label4)
         layout3.addWidget(self.search_bar2)
@@ -75,10 +96,16 @@ class MainWindow(QWidget):
         layout.addWidget(self.label3)
         layout.addWidget(self.button2)
         layout.addWidget(self.button)
+        layout.addWidget(self.button_show_image)
         layout.addLayout(gridLayout)
         gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
 
         self.setLayout(layout)
+
+    def show_image(self):
+        image_path = "/Users/marcoferreira/Desktop/gisem.png"
+        self.image_viewer_window = ImageViewerWindow(image_path)
+        self.image_viewer_window.show()
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
@@ -101,8 +128,8 @@ class MainWindow(QWidget):
     def run_script_thread(devices, selected, graphs, mac):
         if mac:
             #testeCv.runscriptSingle(devices, selected, graphs)
-            testeCv.runscriptgrabRetrieve(devices, selected, graphs)
-            #testeCv.runscriptMac(devices, selected, graphs)
+            #testeCv.runscriptgrabRetrieve(devices, selected, graphs)
+            testeCv.runscriptMac(devices, selected, graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
