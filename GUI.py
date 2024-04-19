@@ -1,29 +1,31 @@
 import time
 
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from threading import Thread
 import testeCv
-from multiprocessing import Process
+from multiprocessing import Process, Event, Queue
 
 class ImageViewerWindow(QMainWindow):
-    def __init__(self, image_path):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("Image Viewer")
-        self.setGeometry(100, 100, 400, 400)
-
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-
         layout = QVBoxLayout()
         self.label = QLabel()
-        pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(self.size(), aspectRatioMode=1)
-        self.label.setPixmap(pixmap)
         layout.addWidget(self.label)
-
         self.central_widget.setLayout(layout)
+
+    def update_image(self, img_array):
+        height, width, channel = img_array.shape
+        bytes_per_line = 3 * width
+        q_img = QImage(img_array.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_img)
+        pixmap = pixmap.scaled(self.label.size(), aspectRatioMode=Qt.KeepAspectRatio)
+        self.label.setPixmap(pixmap)
+
 
 class MainWindow(QWidget):
     thread_finished = pyqtSignal()
@@ -31,13 +33,15 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Object Detection")
         self.setGeometry(500, 500, 500, 500)
-
+        self.queue = Queue()
         layout = QVBoxLayout()
         layout2 = QHBoxLayout()
         layout3 = QVBoxLayout()
         layout4 = QVBoxLayout()
         gridLayout = QGridLayout()
-
+        self.image_viewer_window = ImageViewerWindow()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_image_from_queue)
         self.label = QLabel("Choose device to connect to:")
         self.objectsSelected = QListWidget()
         self.graphs = False
@@ -102,40 +106,50 @@ class MainWindow(QWidget):
 
         self.setLayout(layout)
 
-    def show_image(self):
-        image_path = "/Users/marcoferreira/Desktop/gisem.png"
-        self.image_viewer_window = ImageViewerWindow(image_path)
-        self.image_viewer_window.show()
-
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
-        devices.append("http://109.247.15.178:6001/mjpg/video.mjpg")
+        '''devices.append("http://109.247.15.178:6001/mjpg/video.mjpg")
         devices.append("http://94.30.51.166:50000/mjpg/video.mjpg")
-        devices.append("http://188.113.184.246:47544/mjpg/video.mjpg")
+        devices.append("http://188.113.184.246:47544/mjpg/video.mjpg")'''
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
-                process = Process(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True))
+                process = Process(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True, self.queue))
                 process.start()
-                Thread(target=self.wait_for_thread, args=(process,)).start()
+                #Thread(target=self.wait_for_thread, args=(process,)).start()
+                self.timer.start(300)
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
             print("No device selected.")
 
+    def update_image_from_queue(self):
+        try:
+            frames = self.queue.get()
+            if frames == -1:
+                self.timer.stop()
+                return 1
+            for device, frame in frames.items():
+                self.image_viewer_window.update_image(frame)
+                self.image_viewer_window.show()
+            return 0
+        except self.queue.empty:
+            print("Queue is empty.")
+            return 0
     def wait_for_thread(self, thread):
         thread.join()
         self.button.setEnabled(True)
 
     @staticmethod
-    def run_script_thread(devices, selected, graphs, mac):
+    def run_script_thread(devices, selected, graphs, mac, queue):
         if mac:
             #testeCv.runscriptSingle(devices, selected, graphs)
-            testeCv.runscriptgrabRetrieve(devices, selected, graphs)
+            testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
             #testeCv.runscriptMac(devices, selected, graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
+
     def update_camera_list(self):
         Thread(target=self.search_for_cameras).start()
 

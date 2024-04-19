@@ -3,19 +3,20 @@ import math
 import os
 import threading
 import time
-
+import queue
 from ultralytics import YOLO
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, Event
 import psutil
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
 grabbed_frames = {}
 retrieved_frames = {}
+predicted_frames= {}
 caps = {}
 cpu_usage = []
 memory_usage = []
@@ -88,7 +89,7 @@ def runscriptSingle(devices, classes, graphs=False):
     #graficoPerformance(start_time, cpu_usage, memory_usage)
     cv2.destroyAllWindows()
 
-def runscriptgrabRetrieve(devices, classes, graphs=False):
+def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     global stop
     global cpu_usage
     global memory_usage
@@ -104,17 +105,18 @@ def runscriptgrabRetrieve(devices, classes, graphs=False):
         threads.append(thread)
 
     interval = 0
-    while interval < 40:
+    while interval < 5:
         time.sleep(1)
         retrieveFrames(devices)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
-        for frame in retrieved_frames.values():
-            predictRetrieve(frame, listObjToFind, graphs)
-
+        for device, frame in retrieved_frames.items():
+            predictRetrieve(frame, listObjToFind, graphs, device)
+        queue.put(predicted_frames)
         cpu_usage.append(psutil.cpu_percent())
         memory_usage.append(psutil.virtual_memory().percent)
         print(interval)
         interval += 1
+    queue.put(-1)
     #graficoPerformance(start_time, cpu_usage, memory_usage)
     with stop_lock:
         stop = True
@@ -140,8 +142,6 @@ def captureThread(device):
     i = 0
     while caps[device].isOpened():
         with stop_lock:
-            if i % 20 == 0:
-                print(stop)
             if stop:
                 break
         caps[device].grab()
@@ -225,7 +225,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared):
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
 
-def predictRetrieve(frame, listObjToFind, graphs):
+def predictRetrieve(frame, listObjToFind, graphs, device):
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -238,7 +238,10 @@ def predictRetrieve(frame, listObjToFind, graphs):
     confiancas = []
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
-    results = local_model.track(frame, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+
+    results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+
+    predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
 
     for r in results:
         boxes = r.boxes.cpu().numpy()
