@@ -3,7 +3,6 @@ import math
 import os
 import threading
 import time
-import queue
 from ultralytics import YOLO
 import cv2
 import matplotlib.pyplot as plt
@@ -46,25 +45,29 @@ def runscript(devices, classes,graphs=False):
     delete_frames()
     cv2.destroyAllWindows()
 
-def runscriptMac(devices, classes, graphs=False):
+def runscriptMac(devices, classes, queue, graphs=False):
     with Manager() as manager:
         cpu_usage = manager.list()
         memory_usage = manager.list()
         start_time = time.time()
-        processes = []
+        threads = []
         listObjToFind = []
         for classe in classes:
             listObjToFind.append(list(model.names.values()).index(classe))
         for device in devices:
-            process = Process(target=predict, args=(device, listObjToFind, graphs, cpu_usage, memory_usage))
-            process.start()
-            processes.append(process)
+            thread = Thread(target=predict, args=(device, listObjToFind, graphs, cpu_usage, memory_usage, queue))
+            thread.start()
+            threads.append(thread)
+
         # Wait for all processes to finish
-        for process in processes:
-            process.join()
+        for thread in threads:
+            thread.join()
+        print(predicted_frames)
+        queue.put(-1)
         #graficoPerformance(start_time, cpu_usage, memory_usage)
         cv2.destroyAllWindows()
-def runscriptSingle(devices, classes, graphs=False):
+
+def runscriptSingle(devices, classes, queue, graphs=False):
     global cpu_usage
     global memory_usage
     start_time = time.time()
@@ -72,20 +75,21 @@ def runscriptSingle(devices, classes, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
-    while interval < 40:
+    while interval < 5:
         for device in devices:
             cap = cv2.VideoCapture(device)
             ret, frame = cap.read()
             if not ret:
                 print("Error: Unable to retrieve frame from webcam.")
                 break
-            predictRetrieve(frame, listObjToFind, graphs)
+            predictRetrieve(frame, listObjToFind, graphs, device)
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             cap.release()
+        queue.put(predicted_frames)
         print(interval)
         interval += 1
-
+    queue.put(-1)
     #graficoPerformance(start_time, cpu_usage, memory_usage)
     cv2.destroyAllWindows()
 
@@ -159,7 +163,8 @@ def retrieveFrames(devices):
             i += 1
         retrieved_frames[device] = frame
 
-def predict(device, listObjToFind, graphs, cpu_shared, memory_shared):
+
+def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -174,7 +179,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    while cap.isOpened() and i < 40:
+    while cap.isOpened() and i < 10:
         grabbed = cap.grab()
         if not grabbed:  # Se o frame nao for lido corretamente
             print("Error: Unable to grab frame from webcam.")
@@ -184,8 +189,14 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared):
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
+
         results = local_model.track(
-            frame, show=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+            frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+
+        predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+        print(f"device: {device} -> frame: {predicted_frames}")
+        queue.put(predicted_frames)
+
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:

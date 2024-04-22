@@ -39,7 +39,6 @@ class MainWindow(QWidget):
         layout3 = QVBoxLayout()
         layout4 = QVBoxLayout()
         gridLayout = QGridLayout()
-        self.image_viewer_window = ImageViewerWindow()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_image_from_queue)
         self.label = QLabel("Choose device to connect to:")
@@ -47,7 +46,7 @@ class MainWindow(QWidget):
         self.graphs = False
         self.graphCheckBox = QCheckBox()
         self.graphCheckBox.setText("Graphs")
-
+        self.device_windows = {}
         self.graphCheckBox.stateChanged.connect(self.checkedGraphs)
         self.graphCheckBox.move(20, 40)
         self.objectsSelected.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -80,8 +79,6 @@ class MainWindow(QWidget):
         self.listDevices.setSelectionMode(QAbstractItemView.MultiSelection)
         self.button2 = QPushButton("Search Devices")
         self.button2.clicked.connect(self.update_camera_list)
-        self.button_show_image = QPushButton("Show Image")
-        self.button_show_image.clicked.connect(self.show_image)
 
         layout3.addWidget(self.label4)
         layout3.addWidget(self.search_bar2)
@@ -100,7 +97,6 @@ class MainWindow(QWidget):
         layout.addWidget(self.label3)
         layout.addWidget(self.button2)
         layout.addWidget(self.button)
-        layout.addWidget(self.button_show_image)
         layout.addLayout(gridLayout)
         gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
 
@@ -108,9 +104,8 @@ class MainWindow(QWidget):
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
-        '''devices.append("http://109.247.15.178:6001/mjpg/video.mjpg")
-        devices.append("http://94.30.51.166:50000/mjpg/video.mjpg")
-        devices.append("http://188.113.184.246:47544/mjpg/video.mjpg")'''
+        devices.append("http://62.131.207.209:8080/cam_1.cgi")
+        devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
@@ -130,12 +125,21 @@ class MainWindow(QWidget):
                 self.timer.stop()
                 return 1
             for device, frame in frames.items():
-                self.image_viewer_window.update_image(frame)
-                self.image_viewer_window.show()
+                if device in self.device_windows:
+                    # Update existing window
+                    self.device_windows[device].update_image(frame)
+                else:
+                    # Create a new window for the device
+                    viewer_window = ImageViewerWindow()
+                    viewer_window.update_image(frame)
+                    viewer_window.show()
+                    self.device_windows[device] = viewer_window
+
             return 0
         except self.queue.empty:
             print("Queue is empty.")
             return 0
+
     def wait_for_thread(self, thread):
         thread.join()
         self.button.setEnabled(True)
@@ -143,9 +147,9 @@ class MainWindow(QWidget):
     @staticmethod
     def run_script_thread(devices, selected, graphs, mac, queue):
         if mac:
-            #testeCv.runscriptSingle(devices, selected, graphs)
-            testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
-            #testeCv.runscriptMac(devices, selected, graphs)
+            #testeCv.runscriptSingle(devices, selected, queue,graphs)
+            #testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
+            testeCv.runscriptMac(devices, selected, queue,graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
