@@ -203,7 +203,11 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
         results = local_model.track(
             frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
         with predicted_frames_lock:
-            predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+            try:
+                predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+            except Exception as e:
+                print(f"Error: {e}")
+                continue
             queue.put(predicted_frames)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
@@ -240,8 +244,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             i += 1
-        print(i)
-        #time.sleep(10)
+        time.sleep(5)
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
