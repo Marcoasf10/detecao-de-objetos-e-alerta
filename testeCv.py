@@ -64,7 +64,7 @@ def runscriptMac(devices, classes, queue, graphs=False):
             thread.join()
         print(predicted_frames)
         queue.put(-1)
-        #graficoPerformance(start_time, cpu_usage, memory_usage)
+        graficoPerformance(start_time, cpu_usage, memory_usage)
         cv2.destroyAllWindows()
 
 def runscriptSingle(devices, classes, queue, graphs=False):
@@ -75,7 +75,7 @@ def runscriptSingle(devices, classes, queue, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
-    while interval < 5:
+    while interval < 10:
         for device in devices:
             cap = cv2.VideoCapture(device)
             ret, frame = cap.read()
@@ -90,7 +90,7 @@ def runscriptSingle(devices, classes, queue, graphs=False):
         print(interval)
         interval += 1
     queue.put(-1)
-    #graficoPerformance(start_time, cpu_usage, memory_usage)
+    graficoPerformance(start_time, cpu_usage, memory_usage)
     cv2.destroyAllWindows()
 
 def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
@@ -112,6 +112,7 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     while interval < 5:
         time.sleep(1)
         retrieveFrames(devices)
+        print("retrieved",retrieved_frames)
         #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
         for device, frame in retrieved_frames.items():
             predictRetrieve(frame, listObjToFind, graphs, device)
@@ -149,7 +150,7 @@ def captureThread(device):
             if stop:
                 break
         caps[device].grab()
-        i+=1
+        i += 1
     caps[device].release()
     with stop_lock:
         stop = False
@@ -159,8 +160,11 @@ def retrieveFrames(devices):
     for device in devices:
         ret = False
         while not ret and i <= 10:
+            print("device", device)
+            print("caps", caps[device])
             ret, frame = caps[device].retrieve()
             i += 1
+            print("frame", frame)
         retrieved_frames[device] = frame
 
 
