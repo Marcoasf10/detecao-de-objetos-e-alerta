@@ -98,12 +98,15 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     global stop
     global cpu_usage
     global memory_usage
+    global caps
     listObjToFind = []
     threads = []
     start_time = time.time()
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
+    for device in devices:
+        caps[device] = cv2.VideoCapture(device)
     while interval < 40:
         for device in devices:
             thread = Thread(target=retrieveFrames, args=(device,))
@@ -125,10 +128,11 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
         print(interval)
         interval += 1
     queue.put(-1)
+    for key,cap in caps.items():
+        cap.release()
     graficoPerformance(start_time, cpu_usage, memory_usage)
     with stop_lock:
         stop = True
-    cv2.destroyAllWindows()
 
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
@@ -159,16 +163,14 @@ def captureThread(device):
         stop = False
 
 def retrieveFrames(device):
+    global caps
     i = 0
-    cap = cv2.VideoCapture(device)
     ret = False
     while not ret and i <= 10:
-        ret = cap.grab()
-        ret, frame = cap.retrieve()
+        ret, frame = caps[device].read()
         i += 1
     with retrived_frames_lock:
         retrieved_frames[device] = frame
-    cap.release()
 
 
 def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
