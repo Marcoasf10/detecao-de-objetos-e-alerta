@@ -76,7 +76,11 @@ def runscriptSingle(devices, classes, queue, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
+<<<<<<< HEAD
     while interval < 20:
+=======
+    while interval < 10:
+>>>>>>> ae59a4efe96d9471fcf1a3b4e6e98dd7285b5358
         for device in devices:
             cap = cv2.VideoCapture(device)
             ret, frame = cap.read()
@@ -104,6 +108,7 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
+<<<<<<< HEAD
     while interval < 40:
         for device in devices:
             thread = Thread(target=retrieveFrames, args=(device,))
@@ -111,6 +116,13 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
             threads.append(thread)
         for thread in threads:
             thread.join()
+=======
+    while interval < 5:
+        time.sleep(1)
+        retrieveFrames(devices)
+        print("retrieved",retrieved_frames)
+        #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
+>>>>>>> ae59a4efe96d9471fcf1a3b4e6e98dd7285b5358
         for device, frame in retrieved_frames.items():
             threads = []
             thread = Thread(target=predictRetrieve, args=(frame, listObjToFind, graphs, device))
@@ -153,13 +165,14 @@ def captureThread(device):
             if stop:
                 break
         caps[device].grab()
-        i+=1
+        i += 1
     caps[device].release()
     with stop_lock:
         stop = False
 
 def retrieveFrames(device):
     i = 0
+<<<<<<< HEAD
     cap = cv2.VideoCapture(device)
     ret = False
     while not ret and i <= 10:
@@ -167,6 +180,16 @@ def retrieveFrames(device):
         ret, frame = cap.retrieve()
         i += 1
     with retrived_frames_lock:
+=======
+    for device in devices:
+        ret = False
+        while not ret and i <= 10:
+            print("device", device)
+            print("caps", caps[device])
+            ret, frame = caps[device].retrieve()
+            i += 1
+            print("frame", frame)
+>>>>>>> ae59a4efe96d9471fcf1a3b4e6e98dd7285b5358
         retrieved_frames[device] = frame
     cap.release()
 

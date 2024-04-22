@@ -131,10 +131,14 @@ class MainWindow(QWidget):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
         devices.append("http://62.131.207.209:8080/cam_1.cgi")
         devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
+<<<<<<< HEAD
         self.image_window = ImageViewerWindow(devices)
         screen_geometry = app.desktop().screenGeometry()
         self.image_window.resize(screen_geometry.width(), screen_geometry.height())
         self.image_window.show()
+=======
+        devices.append("http://77.89.48.24:89/cgi-bin/faststream.jpg?stream=half&amp;fps=15&amp;rand=COUNTER")
+>>>>>>> ae59a4efe96d9471fcf1a3b4e6e98dd7285b5358
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
