@@ -62,7 +62,6 @@ def runscriptMac(devices, classes, queue, graphs=False):
         # Wait for all processes to finish
         for thread in threads:
             thread.join()
-        print(predicted_frames)
         queue.put(-1)
         graficoPerformance(start_time, cpu_usage, memory_usage)
         cv2.destroyAllWindows()
@@ -198,9 +197,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
             frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
 
         predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
-        print(f"device: {device} -> frame: {predicted_frames}")
         queue.put(predicted_frames)
-
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
@@ -236,6 +233,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             i += 1
+            time.sleep(2)
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
