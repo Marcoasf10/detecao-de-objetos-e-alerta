@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from threading import Thread
 import testeCv
-from multiprocessing import Process, Event, Queue
+import cv2
+from multiprocessing import Process, Queue
 
 class ImageViewerWindow(QMainWindow):
     def __init__(self):
@@ -21,11 +22,12 @@ class ImageViewerWindow(QMainWindow):
     def update_image(self, img_array):
         height, width, channel = img_array.shape
         bytes_per_line = 3 * width
-        q_img = QImage(img_array.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        # Convert BGR to RGB
+        img_array_rgb = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
+        q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaled(self.label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.label.setPixmap(pixmap)
-
 
 class MainWindow(QWidget):
     thread_finished = pyqtSignal()
