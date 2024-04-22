@@ -12,6 +12,9 @@ from multiprocessing import Process, Queue
 class ImageViewerWindow(QMainWindow):
     def __init__(self, devices):
         super().__init__()
+
+        self.screen_geometry = app.desktop().screenGeometry()
+        self.setGeometry(0, 0, self.screen_geometry.width(), self.screen_geometry.height())
         self.setWindowTitle("Image Viewer")
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -29,7 +32,6 @@ class ImageViewerWindow(QMainWindow):
 
         # Criar locais para exibir imagens com base no número fornecido
         self.create_image_locations(devices)
-
     def create_image_locations(self, devices):
         num_colunas = round(math.sqrt(len(devices)))
         i = 0
@@ -40,6 +42,12 @@ class ImageViewerWindow(QMainWindow):
             row = i // num_colunas
             col = i % num_colunas
             self.grid_layout.addWidget(label, row, col)
+            column_width = self.screen_geometry.width() // num_colunas
+
+            pixmap = QPixmap("frames/noCamera.jpg")
+            scaled_pixmap = pixmap.scaled(column_width, pixmap.height() // 2, Qt.KeepAspectRatio)
+            self.image_labels[device].setPixmap(scaled_pixmap)
+            self.image_labels[device].setPixmap(scaled_pixmap)
             i += 1
 
     def update_image(self, frame, device):
@@ -124,21 +132,15 @@ class MainWindow(QWidget):
         layout.addWidget(self.button)
         layout.addLayout(gridLayout)
         gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
-        self.image_window = ImageViewerWindow([])
+        self.image_window = None
         self.setLayout(layout)
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
         devices.append("http://62.131.207.209:8080/cam_1.cgi")
         devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
-<<<<<<< HEAD
         self.image_window = ImageViewerWindow(devices)
-        screen_geometry = app.desktop().screenGeometry()
-        self.image_window.resize(screen_geometry.width(), screen_geometry.height())
         self.image_window.show()
-=======
-        devices.append("http://77.89.48.24:89/cgi-bin/faststream.jpg?stream=half&amp;fps=15&amp;rand=COUNTER")
->>>>>>> ae59a4efe96d9471fcf1a3b4e6e98dd7285b5358
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
