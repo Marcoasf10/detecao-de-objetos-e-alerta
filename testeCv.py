@@ -76,7 +76,7 @@ def runscriptSingle(devices, classes, queue, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
-    while interval < 20:
+    while interval < 40:
         for device in devices:
             cap = cv2.VideoCapture(device)
             ret, frame = cap.read()
@@ -174,6 +174,7 @@ def retrieveFrames(device):
 
 
 def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
+    global predicted_frames
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -188,7 +189,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    while cap.isOpened() and i < 20:
+    while cap.isOpened() and i < 40:
         grabbed = cap.grab()
         if not grabbed:  # Se o frame nao for lido corretamente
             print("Error: Unable to grab frame from webcam.")
@@ -201,9 +202,9 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
 
         results = local_model.track(
             frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
-
-        predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
-        queue.put(predicted_frames)
+        with predicted_frames_lock:
+            predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+            queue.put(predicted_frames)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
             break
         for r in results:
@@ -239,7 +240,8 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             i += 1
-        time.sleep(10)
+        print(i)
+        #time.sleep(10)
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
