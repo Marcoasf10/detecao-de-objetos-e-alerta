@@ -1,3 +1,4 @@
+import math
 import time
 
 from PyQt5.QtGui import QPixmap, QImage
@@ -9,26 +10,48 @@ import cv2
 from multiprocessing import Process, Queue
 
 class ImageViewerWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, devices):
         super().__init__()
         self.setWindowTitle("Image Viewer")
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        layout = QVBoxLayout()
-        self.label = QLabel()
-        layout.addWidget(self.label)
-        self.central_widget.setLayout(layout)
 
-    def update_image(self, img_array):
-        height, width, channel = img_array.shape
-        bytes_per_line = 3 * width
-        # Convert BGR to RGB
-        img_array_rgb = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-        q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(q_img)
-        pixmap = pixmap.scaled(self.label.size(), aspectRatioMode=Qt.KeepAspectRatio)
-        self.label.setPixmap(pixmap)
+        # Layout principal para organizar os locais das imagens
+        self.main_layout = QVBoxLayout()
+        self.central_widget.setLayout(self.main_layout)
 
+        # Layout de grade para organizar os locais das imagens
+        self.grid_layout = QGridLayout()
+        self.main_layout.addLayout(self.grid_layout)
+
+        # Lista para armazenar os QLabel para exibir as imagens
+        self.image_labels = {}
+
+        # Criar locais para exibir imagens com base no número fornecido
+        self.create_image_locations(devices)
+
+    def create_image_locations(self, devices):
+        num_colunas = round(math.sqrt(len(devices)))
+        i = 0
+        for device in devices:
+            label = QLabel()
+            label.setAlignment(Qt.AlignCenter)
+            self.image_labels[device] = label
+            row = i // num_colunas
+            col = i % num_colunas
+            self.grid_layout.addWidget(label, row, col)
+            i += 1
+
+    def update_image(self, frame, device):
+        if device in self.image_labels.keys():
+            height, width, channel = frame.shape
+            bytes_per_line = 3 * width
+            # Convert BGR to RGB
+            img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(q_img)
+            pixmap = pixmap.scaled(self.image_labels[device].size(), aspectRatioMode=Qt.KeepAspectRatio)
+            self.image_labels[device].setPixmap(pixmap)
 class MainWindow(QWidget):
     thread_finished = pyqtSignal()
     def __init__(self):
@@ -101,20 +124,24 @@ class MainWindow(QWidget):
         layout.addWidget(self.button)
         layout.addLayout(gridLayout)
         gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
-
+        self.image_window = ImageViewerWindow([])
         self.setLayout(layout)
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
         devices.append("http://62.131.207.209:8080/cam_1.cgi")
         devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
+        self.image_window = ImageViewerWindow(devices)
+        screen_geometry = app.desktop().screenGeometry()
+        self.image_window.resize(screen_geometry.width(), screen_geometry.height())
+        self.image_window.show()
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
-                process = Process(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True, self.queue))
-                process.start()
-                #Thread(target=self.wait_for_thread, args=(process,)).start()
-                self.timer.start(300)
+                thread = Thread(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True, self.queue))
+                thread.start()
+                Thread(target=self.wait_for_thread, args=(thread,)).start()
+                Thread(target=self.readQueue).start()
             except Exception as e:
                 print(f"Error executing script: {e}")
         else:
@@ -122,26 +149,30 @@ class MainWindow(QWidget):
 
     def update_image_from_queue(self):
         try:
-            frames = self.queue.get()
+            frames = self.queue.get(timeout=0.4)
             if frames == -1:
                 self.timer.stop()
                 return 1
             for device, frame in frames.items():
-                if device in self.device_windows:
-                    # Update existing window
-                    self.device_windows[device].update_image(frame)
-                else:
-                    # Create a new window for the device
-                    viewer_window = ImageViewerWindow()
-                    viewer_window.update_image(frame)
-                    viewer_window.show()
-                    self.device_windows[device] = viewer_window
+                self.image_window.update_image(frame, device)
 
             return 0
         except self.queue.empty:
             print("Queue is empty.")
             return 0
 
+    def readQueue(self):
+        while True:
+            print("Aqui")
+            try:
+                frames = self.queue.get()
+                if frames == -1:
+                    self.timer.stop()
+                for device, frame in frames.items():
+                    self.image_window.update_image(frame, device)
+            except self.queue.empty:
+                print("Queue is empty.")
+            time.sleep(0.5)
     def wait_for_thread(self, thread):
         thread.join()
         self.button.setEnabled(True)
@@ -150,8 +181,8 @@ class MainWindow(QWidget):
     def run_script_thread(devices, selected, graphs, mac, queue):
         if mac:
             #testeCv.runscriptSingle(devices, selected, queue,graphs)
-            #testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
-            testeCv.runscriptMac(devices, selected, queue,graphs)
+            testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
+            #testeCv.runscriptMac(devices, selected, queue,graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)

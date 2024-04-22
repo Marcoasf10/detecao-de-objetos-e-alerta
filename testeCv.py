@@ -23,6 +23,8 @@ cpu_inicial = psutil.cpu_percent()
 memory_inicial = psutil.virtual_memory().percent
 stop = False
 stop_lock = threading.Lock()
+retrived_frames_lock = threading.Lock()
+predicted_frames_lock = threading.Lock()
 
 def runscript(devices, classes,graphs=False):
     global cpu_usage
@@ -63,7 +65,7 @@ def runscriptMac(devices, classes, queue, graphs=False):
         for thread in threads:
             thread.join()
         queue.put(-1)
-        #graficoPerformance(start_time, cpu_usage, memory_usage)
+        graficoPerformance(start_time, cpu_usage, memory_usage)
         cv2.destroyAllWindows()
 
 def runscriptSingle(devices, classes, queue, graphs=False):
@@ -74,7 +76,7 @@ def runscriptSingle(devices, classes, queue, graphs=False):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     interval = 0
-    while interval < 5:
+    while interval < 20:
         for device in devices:
             cap = cv2.VideoCapture(device)
             ret, frame = cap.read()
@@ -89,38 +91,41 @@ def runscriptSingle(devices, classes, queue, graphs=False):
         print(interval)
         interval += 1
     queue.put(-1)
-    #graficoPerformance(start_time, cpu_usage, memory_usage)
+    graficoPerformance(start_time, cpu_usage, memory_usage)
     cv2.destroyAllWindows()
 
 def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     global stop
     global cpu_usage
     global memory_usage
-    threads = []
     listObjToFind = []
+    threads = []
     start_time = time.time()
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
-    for device in devices:
-        caps[device] = cv2.VideoCapture(device)
-        thread = Thread(target=captureThread, args=(device,))
-        thread.start()
-        threads.append(thread)
-
     interval = 0
-    while interval < 5:
-        time.sleep(1)
-        retrieveFrames(devices)
-        #predictRetrieve(retrieved_frames.values(), listObjToFind, graphs)    -- Não funciona (Error: Invalid img type)
+    while interval < 40:
+        for device in devices:
+            thread = Thread(target=retrieveFrames, args=(device,))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
         for device, frame in retrieved_frames.items():
-            predictRetrieve(frame, listObjToFind, graphs, device)
+            threads = []
+            thread = Thread(target=predictRetrieve, args=(frame, listObjToFind, graphs, device))
+            thread.start()
+            threads.append(thread)
+            for thread in threads:
+                thread.join()
         queue.put(predicted_frames)
         cpu_usage.append(psutil.cpu_percent())
         memory_usage.append(psutil.virtual_memory().percent)
+        cv2.destroyAllWindows()
         print(interval)
         interval += 1
     queue.put(-1)
-    #graficoPerformance(start_time, cpu_usage, memory_usage)
+    graficoPerformance(start_time, cpu_usage, memory_usage)
     with stop_lock:
         stop = True
     cv2.destroyAllWindows()
@@ -153,14 +158,17 @@ def captureThread(device):
     with stop_lock:
         stop = False
 
-def retrieveFrames(devices):
+def retrieveFrames(device):
     i = 0
-    for device in devices:
-        ret = False
-        while not ret and i <= 10:
-            ret, frame = caps[device].retrieve()
-            i += 1
+    cap = cv2.VideoCapture(device)
+    ret = False
+    while not ret and i <= 10:
+        ret = cap.grab()
+        ret, frame = cap.retrieve()
+        i += 1
+    with retrived_frames_lock:
         retrieved_frames[device] = frame
+    cap.release()
 
 
 def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
@@ -178,7 +186,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    while cap.isOpened() and i < 10:
+    while cap.isOpened() and i < 20:
         grabbed = cap.grab()
         if not grabbed:  # Se o frame nao for lido corretamente
             print("Error: Unable to grab frame from webcam.")
@@ -229,7 +237,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             i += 1
-            time.sleep(2)
+        time.sleep(10)
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
@@ -248,9 +256,9 @@ def predictRetrieve(frame, listObjToFind, graphs, device):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
-
-    predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+    results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280 , conf=0.35)
+    with predicted_frames_lock:
+        predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
 
     for r in results:
         boxes = r.boxes.cpu().numpy()
@@ -460,6 +468,7 @@ def graficoPerformance(start_time, cpu_usage, memory_usage):
     axs[0].text(0.5, 0.9, f'Inicial CPU (%): {cpu_inicial:.2f}', transform=axs[0].transAxes, color='black')
     axs[0].text(0.5, 0.8, f'Max CPU Usage (%): {max(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
     axs[0].text(0.5, 0.7, f'Min CPU Usage (%): {min(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.6, f'Média CPU Usage (%): {np.mean(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
     axs[0].set_title('CPU Usage (%)')
     axs[0].set_xlabel('Frame')
     axs[0].set_ylabel('Usage')
@@ -472,6 +481,7 @@ def graficoPerformance(start_time, cpu_usage, memory_usage):
     axs[1].text(0.5, 0.5, f'Inicial Memory (%): {memory_inicial:.2f}', transform=axs[1].transAxes, color='black')
     axs[1].text(0.5, 0.4, f'Max Memory usage (%): {max(memory_usage_array):.2f}', transform=axs[1].transAxes, color='black')
     axs[1].text(0.5, 0.3, f'Min Memory usage (%): {min(memory_usage_array):.2f}', transform=axs[1].transAxes, color='black')
+    axs[1].text(0.5, 0.2, f'Média Memory usage (%): {np.mean(memory_usage_array):.2f}', transform=axs[1].transAxes, color='black')
     axs[1].set_title('Memory Usage (%)')
     axs[1].set_xlabel('Frame')
     axs[1].set_ylabel('Usage')
