@@ -186,8 +186,8 @@ class MainWindow(QWidget):
     def run_script_thread(devices, selected, graphs, mac, queue):
         if mac:
             #testeCv.runscriptSingle(devices, selected, queue,graphs)
-            testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
-            #testeCv.runscriptMac(devices, selected, queue,graphs)
+            #testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
+            testeCv.runscriptMac(devices, selected, queue,graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)

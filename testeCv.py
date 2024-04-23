@@ -107,7 +107,7 @@ def runscriptgrabRetrieve(devices, classes, queue, graphs=False):
     interval = 0
     for device in devices:
         caps[device] = cv2.VideoCapture(device)
-    while interval < 40:
+    while interval < 200:
         for device in devices:
             thread = Thread(target=retrieveFrames, args=(device,))
             thread.start()
