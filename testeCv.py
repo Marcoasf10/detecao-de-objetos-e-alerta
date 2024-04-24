@@ -47,7 +47,7 @@ def runscript(devices, classes,graphs=False):
     delete_frames()
     cv2.destroyAllWindows()
 
-def runscriptMac(devices, classes, queue, graphs=False):
+def runscriptMac(devices, classes, queue, delay, graphs=False):
     with Manager() as manager:
         cpu_usage = manager.list()
         memory_usage = manager.list()
@@ -57,7 +57,7 @@ def runscriptMac(devices, classes, queue, graphs=False):
         for classe in classes:
             listObjToFind.append(list(model.names.values()).index(classe))
         for device in devices:
-            thread = Thread(target=predict, args=(device, listObjToFind, graphs, cpu_usage, memory_usage, queue))
+            thread = Thread(target=predict, args=(device, listObjToFind, graphs, cpu_usage, memory_usage, queue, delay))
             thread.start()
             threads.append(thread)
 
@@ -174,13 +174,12 @@ def retrieveFrames(device):
         retrieved_frames[device] = frame
 
 
-def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
+def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue, delay):
     global predicted_frames
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
     cap = cv2.VideoCapture(device)
-    delay = 30
     i = 0
     margem = 4
     x1_coordinates = []
@@ -190,8 +189,13 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     confiancas = []
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
+    last_frame = None
+    error = 0
 
     while cap.isOpened() and i < 40:
+        #dar tempo para câmara inicializar
+        if last_frame is None:
+            time.sleep(0.1)
         start_time = time.time()
         grabbed = cap.grab()
         if not grabbed:
@@ -203,8 +207,15 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
-        results = local_model.track(
-            frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+        if last_frame is not None:
+            img1 = cv2.cvtColor(last_frame, cv2.COLOR_BGR2GRAY)
+            img2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            error, diff = diferenceImgs(img1, img2)
+            print("Error diference: ", error)
+        # if img not equal last img:
+        if last_frame is None or (last_frame is not None and error > 15):
+            results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
+            last_frame = frame
         with predicted_frames_lock:
             try:
                 predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
@@ -254,6 +265,12 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
 
+def diferenceImgs(img1, img2):
+   h, w = img1.shape
+   diff = cv2.subtract(img1, img2)
+   err = np.sum(diff**2)
+   mse = err/(float(h*w))
+   return mse, diff
 def predictRetrieve(frame, listObjToFind, graphs, device):
     canto1Mapper = dict()
     canto2Mapper = dict()

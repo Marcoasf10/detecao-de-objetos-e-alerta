@@ -137,15 +137,18 @@ class MainWindow(QWidget):
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
-        devices.append("http://62.131.207.209:8080/cam_1.cgi")
+        #devices.append("http://62.131.207.209:8080/cam_1.cgi")
         #devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
         devices.append("http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444")
+        #devices.append("rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov")
+        print(cv2.getBuildInformation())
         self.image_window = ImageViewerWindow(devices)
         self.image_window.show()
         if len(devices) > 0:
             self.button.setEnabled(False)
             try:
-                thread = Thread(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True, self.queue))
+                self.delay = 10
+                thread = Thread(target=self.run_script_thread, args=(devices, self.class_names_selected, self.graphs, True, self.queue, self.delay))
                 thread.start()
                 Thread(target=self.wait_for_thread, args=(thread,)).start()
                 Thread(target=self.readQueue).start()
@@ -184,11 +187,11 @@ class MainWindow(QWidget):
         self.button.setEnabled(True)
 
     @staticmethod
-    def run_script_thread(devices, selected, graphs, mac, queue):
+    def run_script_thread(devices, selected, graphs, mac, queue, delay):
         if mac:
             #testeCv.runscriptSingle(devices, selected, queue,graphs)
             #testeCv.runscriptgrabRetrieve(devices, selected, queue, graphs)
-            testeCv.runscriptMac(devices, selected, queue,graphs)
+            testeCv.runscriptMac(devices, selected, queue, delay, graphs)
         else:
             testeCv.runscriptgrabRetrieve(devices, selected, graphs)
             #testeCv.runscript(devices, selected,graphs)
