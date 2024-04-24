@@ -191,7 +191,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    while cap.isOpened() and i < 40:    
+    while cap.isOpened() and i < 40:
         start_time = time.time()
         grabbed = cap.grab()
         if not grabbed:
