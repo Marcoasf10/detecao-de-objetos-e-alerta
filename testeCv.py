@@ -8,7 +8,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from threading import Thread
-from multiprocessing import Process, Manager, Event
+from multiprocessing import Manager
 import psutil
 
 modelo = 'yolov8s'
@@ -87,6 +87,7 @@ def runscriptSingle(devices, classes, queue, graphs=False):
             cpu_usage.append(psutil.cpu_percent())
             memory_usage.append(psutil.virtual_memory().percent)
             cap.release()
+            cv2.destroyAllWindows()
         queue.put(predicted_frames)
         print(interval)
         interval += 1
@@ -179,6 +180,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     canto2Mapper = dict()
     local_model = YOLO(modelo)
     cap = cv2.VideoCapture(device)
+    delay = 30
     i = 0
     margem = 4
     x1_coordinates = []
@@ -189,17 +191,18 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
     distanciaCanto1Lista = []
     distanciaCanto2Lista = []
 
-    while cap.isOpened() and i < 40:
+    while cap.isOpened() and i < 40:    
+        start_time = time.time()
         grabbed = cap.grab()
-        if not grabbed:  # Se o frame nao for lido corretamente
+        if not grabbed:
+            cap.release()
+            cap = cv2.VideoCapture(device)
             print("Error: Unable to grab frame from webcam.")
-            break
-
+            continue
         ret, frame = cap.retrieve()
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
             break
-
         results = local_model.track(
             frame, save=True, project="frames", exist_ok=True, classes=listObjToFind, stream=False, persist=True, imgsz=1280)
         with predicted_frames_lock:
@@ -241,10 +244,12 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue):
                         print(f"ID: {int(id)} -> Parado")
                     else:
                         print(f"ID: {int(id)} -> Mover")
-            cpu_usage.append(psutil.cpu_percent())
-            memory_usage.append(psutil.virtual_memory().percent)
-            i += 1
-        time.sleep(5)
+        cpu_usage.append(psutil.cpu_percent())
+        memory_usage.append(psutil.virtual_memory().percent)
+        i += 1
+        while time.time() - start_time <= delay:
+            cap.grab()
+
     cap.release()
     if graphs:
         criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas, distanciaCanto1Lista, distanciaCanto2Lista)
