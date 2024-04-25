@@ -131,17 +131,17 @@ class MainWindow(QWidget):
         layout.addWidget(self.button2)
         layout.addWidget(self.button)
         layout.addLayout(gridLayout)
-        gridLayout.addWidget(self.graphCheckBox,0,0, alignment=Qt.AlignCenter)
+        gridLayout.addWidget(self.graphCheckBox, 0, 0, alignment=Qt.AlignCenter)
         self.image_window = None
         self.setLayout(layout)
 
     def run_script(self):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
         #devices.append("http://62.131.207.209:8080/cam_1.cgi")
-        #devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
-        devices.append("http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444")
+        devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
+        #devices.append("http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444")
         #devices.append("rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov")
-        print(cv2.getBuildInformation())
+
         self.image_window = ImageViewerWindow(devices)
         self.image_window.show()
         if len(devices) > 0:
