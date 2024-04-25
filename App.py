@@ -1,19 +1,20 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
-    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QAbstractItemView
+    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit
 from PyQt5 import QtCore
 import testeCv
 
 
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
-    setting_clicked = QtCore.pyqtSignal(str)  # Define a signal for setting button clicked
+    setting_clicked = QtCore.pyqtSignal(str, list)  # Define a signal for setting button clicked
 
-    def __init__(self, name, image_path):
+    def __init__(self, name, objToFind):
         super().__init__()
         self.name = name
-        self.image_path = image_path  # Store the image path
+        self.image_path = "frames/noCamera.jpg"  # Store the image path
+        self.objToFind = objToFind
         layout = QVBoxLayout(self)
 
         # Create a horizontal layout for the label and setting button
@@ -29,8 +30,8 @@ class DispositivoWidget(QWidget):
         layout.addLayout(top_layout)
 
         self.image_label = QLabel()
-        pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaledToWidth(700)
+        pixmap = QPixmap(self.image_path)
+        pixmap = pixmap.scaledToWidth(200)
         self.image_label.setPixmap(pixmap)
         layout.addWidget(self.image_label)
 
@@ -51,7 +52,7 @@ class DispositivoWidget(QWidget):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
-        self.setting_clicked.emit(self.name)  # Emit device name when setting button is clicked
+        self.setting_clicked.emit(self.name, self.objToFind)  # Emit device name and existing objects
 
 
 class DispositivosWindow(QWidget):
@@ -76,13 +77,14 @@ class DispositivosWindow(QWidget):
         layout.addLayout(dispositivos_layout)
 
         # Add sample dispositivos
-        self.add_dispositivo("Dispositivo 1", "/Users/marcoferreira/Projeto_Informatico/detecao-de-objetos-e-alerta/frames/track/image0.jpg")
-        self.add_dispositivo("Dispositivo 2", "/Users/marcoferreira/Projeto_Informatico/detecao-de-objetos-e-alerta/frames/track/image0.jpg")
-        self.add_dispositivo("Dispositivo 3", "/Users/marcoferreira/Projeto_Informatico/detecao-de-objetos-e-alerta/frames/track/image0.jpg")
+        self.add_dispositivo("Dispositivo 1", ["banana"])
+        #elf.add_dispositivo("Dispositivo 2")
+        #self.add_dispositivo("Dispositivo 3")
 
-    def add_dispositivo(self, name, image_path):
-        dispositivo_widget = DispositivoWidget(name, image_path)
+    def add_dispositivo(self, name, objToFind):
+        dispositivo_widget = DispositivoWidget(name, objToFind)
         dispositivo_widget.image_clicked.connect(self.show_image_window)  # Connect signal to slot
+        dispositivo_widget.setting_clicked.connect(self.open_device_config_dialog)  # Connect setting signal
         self.dispositivos_layout.addWidget(dispositivo_widget)
 
     def show_image_window(self, name, pixmap):
@@ -91,8 +93,24 @@ class DispositivosWindow(QWidget):
         image_window.show()
 
     def open_device_ip_window(self):
-        device_ip_window = ConfigurarDispositivo(self)
+        device_ip_window = ConfigurarDispositivo()
+        device_ip_window.done_clicked.connect(self.handle_done_clicked)  # Connect Done signal to slot
         device_ip_window.exec_()
+
+    def handle_done_clicked(self, name, selected_items):
+        for widget in self.findChildren(DispositivoWidget):
+            if widget.name == name:
+                print(f"Updating device '{name}' with selected items: {selected_items}")
+                widget.objToFind = selected_items
+                return
+
+        print(f"Adding new device '{name}' with selected items: {selected_items}")
+        self.add_dispositivo(name, selected_items)
+
+    def open_device_config_dialog(self, name, objToFind):
+        device_config_dialog = ConfigurarDispositivo(name, objToFind)
+        device_config_dialog.done_clicked.connect(self.handle_done_clicked)
+        device_config_dialog.exec_()
 
 
 class AlertasWindow(QWidget):
@@ -117,7 +135,9 @@ class ImageWindow(QMainWindow):
 
 
 class ConfigurarDispositivo(QDialog):
-    def __init__(self,  dispositivos_window):
+    done_clicked = QtCore.pyqtSignal(str, list)
+
+    def __init__(self, name="", objToFind=None):
         super().__init__()
         self.class_names = testeCv.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
@@ -126,6 +146,7 @@ class ConfigurarDispositivo(QDialog):
         # Line edit for entering device IP
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
+        self.ip_line_edit.setText(name)
         self.testButton = QPushButton("Test connection")
 
         # List widget for selecting objects to detect
@@ -136,15 +157,18 @@ class ConfigurarDispositivo(QDialog):
         self.availableObjects = QListWidget()
         self.availableObjects.addItems(sorted(self.class_names))
         self.selected_items = []
-
-        # Label to display selected objects
         self.selected_objects_label = QLabel("Selected Objects: ")
+        if objToFind:
+            for item in objToFind:
+                items = self.availableObjects.findItems(item, Qt.MatchExactly)
+                for i in items:
+                    i.setSelected(True)
+            self.selected_items = objToFind
+            self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
 
         # Button to add objects
-        self.add_button = QPushButton("Add Objects")
-        self.add_button.clicked.connect(self.add_objects)
         self.doneButton = QPushButton("Done")
-        self.doneButton.clicked.connect(self.adicionarDispositivo)
+        self.doneButton.clicked.connect(self.on_done_clicked)
 
         # Add widgets to layout
         layout.addWidget(self.ipLabeb)
@@ -154,7 +178,6 @@ class ConfigurarDispositivo(QDialog):
         layout.addWidget(self.search_bar)
         layout.addWidget(self.availableObjects)
         layout.addWidget(self.selected_objects_label)
-        layout.addWidget(self.add_button)
         layout.addWidget(self.doneButton)
 
         self.setLayout(layout)
@@ -179,9 +202,11 @@ class ConfigurarDispositivo(QDialog):
             # Update the label to show all selected items
             self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
 
-    def add_objects(self):
-        for item in self.selected_items:
-            print("Objects Selected:", item)
+    def on_done_clicked(self):
+        device_name = self.ip_line_edit.text()  # Get the device name
+        selected_items = self.selected_items
+        self.done_clicked.emit(device_name, selected_items)  # Emit signal with device name and selected items
+        self.accept()  # fechar janela
 
     def adicionarDispositivo(self):
         self.dispositivos_window.add_dispositivo(self.ip_line_edit.text(), "frames/noCamera.jpg")
