@@ -30,7 +30,7 @@ class DispositivoWidget(QWidget):
 
         self.image_label = QLabel()
         pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaledToWidth(200)
+        pixmap = pixmap.scaledToWidth(700)
         self.image_label.setPixmap(pixmap)
         layout.addWidget(self.image_label)
 
@@ -91,7 +91,7 @@ class DispositivosWindow(QWidget):
         image_window.show()
 
     def open_device_ip_window(self):
-        device_ip_window = ConfigurarDispositivo()
+        device_ip_window = ConfigurarDispositivo(self)
         device_ip_window.exec_()
 
 
@@ -117,12 +117,12 @@ class ImageWindow(QMainWindow):
 
 
 class ConfigurarDispositivo(QDialog):
-    def __init__(self):
+    def __init__(self,  dispositivos_window):
         super().__init__()
         self.class_names = testeCv.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
         layout = QVBoxLayout()
-
+        self.dispositivos_window = dispositivos_window
         # Line edit for entering device IP
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
@@ -144,6 +144,7 @@ class ConfigurarDispositivo(QDialog):
         self.add_button = QPushButton("Add Objects")
         self.add_button.clicked.connect(self.add_objects)
         self.doneButton = QPushButton("Done")
+        self.doneButton.clicked.connect(self.adicionarDispositivo)
 
         # Add widgets to layout
         layout.addWidget(self.ipLabeb)
@@ -181,6 +182,10 @@ class ConfigurarDispositivo(QDialog):
     def add_objects(self):
         for item in self.selected_items:
             print("Objects Selected:", item)
+
+    def adicionarDispositivo(self):
+        self.dispositivos_window.add_dispositivo(self.ip_line_edit.text(), "frames/noCamera.jpg")
+        self.close()
 
 
 class MainWindow(QWidget):

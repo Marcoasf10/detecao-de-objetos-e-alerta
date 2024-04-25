@@ -1,0 +1,132 @@
+import math
+import time
+from threading import Thread, Lock
+import cv2
+import numpy as np
+from ultralytics import YOLO
+
+modelo = 'yolov8s'
+model = YOLO(modelo)
+retrieved_frames = {}
+predicted_frames = {}
+stop = {}
+stop_lock = Lock()
+retrived_frames_lock = Lock()
+predicted_frames_lock = Lock()
+
+
+def addDispositivoToPredict(device, classes, queue, delay):
+    listObjToFind = []
+    for classe in classes:
+        listObjToFind.append(list(model.names.values()).index(classe))
+    thread = Thread(target=predict, args=(device, listObjToFind, queue, delay))
+    thread.start()
+    thread.join()
+    cv2.destroyAllWindows()
+
+
+def distance(x1, x2, y1, y2):
+    return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+def diferenceImgs(img1, img2):
+    h, w = img1.shape
+    diff = cv2.subtract(img1, img2)
+    err = np.sum(diff ** 2)
+    mse = err / (float(h * w))
+    return mse, diff
+
+
+def predict(device, listObjToFind, queue, delay):
+    global predicted_frames
+    canto1Mapper = dict()
+    canto2Mapper = dict()
+    local_model = YOLO(modelo)
+    cap = cv2.VideoCapture(device)
+    i = 0
+    margem = 4
+    last_frame = None
+    error = 0
+    while cap.isOpened() and i < 40:
+        # dar tempo para câmara inicializar
+        if last_frame is None:
+            time.sleep(0.1)
+        start_time = time.time()
+        grabbed = cap.grab()
+        if not grabbed:
+            cap.release()
+            cap = cv2.VideoCapture(device)
+            print("Error: Unable to grab frame from webcam.")
+            continue
+        ret, frame = cap.retrieve()
+        if not ret:
+            print("Error: Unable to retrieve frame from webcam.")
+            break
+        if last_frame is not None:
+            img1 = cv2.cvtColor(last_frame, cv2.COLOR_BGR2GRAY)
+            img2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            error, diff = diferenceImgs(img1, img2)
+            print("Error diference: ", error)
+        # if img not equal last img:
+        if last_frame is None or (last_frame is not None and error > 15):
+            results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
+                                        stream=False, persist=True, imgsz=1280)
+            last_frame = frame
+        with predicted_frames_lock:
+            try:
+                predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+            except Exception as e:
+                print(f"Error: {e}")
+                continue
+            queue.put(predicted_frames)
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
+            break
+        for r in results:
+            boxes = r.boxes.cpu().numpy()
+            if not boxes or boxes.id is None or boxes.id.size == 0:
+                i += 1
+                continue
+            if boxes:
+                for f in range(boxes.id.size):
+                    id = boxes.id[f]
+                    x1, y1, x2, y2 = boxes.xyxy[f]
+                    if id not in canto1Mapper and id not in canto2Mapper:
+                        canto1Mapper[id] = (x1, y1, -1)
+                        canto2Mapper[id] = (x2, y2, -1)
+                    canto1Mapper[id] = (x1, y1, distance(canto1Mapper[id][0], x1, canto1Mapper[id][1], y1))
+                    canto2Mapper[id] = (x2, y2, distance(canto2Mapper[id][0], x2, canto2Mapper[id][1], y2))
+                    if canto1Mapper[id][2] == -1 and canto2Mapper[id][2] == -1:
+                        continue
+                    if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
+                        print(f"ID: {int(id)} -> Parado")
+                    else:
+                        print(f"ID: {int(id)} -> Mover")
+        i += 1
+        while time.time() - start_time <= delay:
+            cap.grab()
+    cap.release()
+
+
+def list_available_cameras():
+    num_devices = 0
+    while True:
+        try:
+            cap = cv2.VideoCapture(num_devices)
+            if cap.isOpened():
+                print(f"Camera {num_devices}: Available")
+                cap.release()
+                num_devices += 1
+            else:
+                print(f"Camera {num_devices}: Not available")
+                break
+        except cv2.error as e:
+            print(f"Error accessing camera {num_devices}: {e}")
+            num_devices += 1
+            continue
+        except Exception as e:
+            print(f"Unknown error: {e}")
+            break
+    return num_devices
+
+
+def get_classes():
+    return list(model.names.values())
