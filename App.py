@@ -142,7 +142,6 @@ class ConfigurarDispositivo(QDialog):
         self.class_names = testeCv.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
         layout = QVBoxLayout()
-        self.dispositivos_window = dispositivos_window
         # Line edit for entering device IP
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
