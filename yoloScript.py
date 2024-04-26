@@ -107,12 +107,14 @@ def predict(device, listObjToFind, queue, delay):
 
 
 def list_available_cameras():
+    devices = []
     num_devices = 0
     while True:
         try:
             cap = cv2.VideoCapture(num_devices)
             if cap.isOpened():
                 print(f"Camera {num_devices}: Available")
+                devices.append(num_devices)
                 cap.release()
                 num_devices += 1
             else:
@@ -125,7 +127,7 @@ def list_available_cameras():
         except Exception as e:
             print(f"Unknown error: {e}")
             break
-    return num_devices
+    return devices
 
 
 def get_classes():
