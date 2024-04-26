@@ -67,7 +67,7 @@ def predict(device, listObjToFind, queue, delay):
             error, diff = diferenceImgs(img1, img2)
             print("Error diference: ", error)
         # if img not equal last img:
-        if last_frame is None or (last_frame is not None and error > 15):
+        if last_frame is None or (last_frame is not None and error > 2):
             results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280)
             last_frame = frame
