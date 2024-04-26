@@ -9,10 +9,11 @@ modelo = 'yolov8s'
 model = YOLO(modelo)
 retrieved_frames = {}
 predicted_frames = {}
-stop = {}
+stop_dict = {}
 stop_lock = Lock()
 retrived_frames_lock = Lock()
 predicted_frames_lock = Lock()
+stop_lock = Lock()
 
 
 def addDispositivoToPredict(device, classes, queue, delay):
@@ -38,6 +39,7 @@ def diferenceImgs(img1, img2):
 
 def predict(device, listObjToFind, queue, delay):
     global predicted_frames
+    global stop_dict
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -46,7 +48,18 @@ def predict(device, listObjToFind, queue, delay):
     margem = 4
     last_frame = None
     error = 0
-    while cap.isOpened() and i < 40:
+    stop = False
+    while i < 40:
+        with stop_lock:
+            if device in stop_dict:
+                stop = stop_dict[device]
+        if stop:
+            if cap.isOpened():
+                cap.release()
+            time.sleep(1)
+            continue
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(device)
         # dar tempo para câmara inicializar
         if last_frame is None:
             time.sleep(0.1)
@@ -55,6 +68,7 @@ def predict(device, listObjToFind, queue, delay):
         if not grabbed:
             cap.release()
             cap = cv2.VideoCapture(device)
+            print(device)
             print("Error: Unable to grab frame from webcam.")
             continue
         ret, frame = cap.retrieve()
@@ -67,7 +81,7 @@ def predict(device, listObjToFind, queue, delay):
             error, diff = diferenceImgs(img1, img2)
             print("Error diference: ", error)
         # if img not equal last img:
-        if last_frame is None or (last_frame is not None and error > 2):
+        if last_frame is None or (last_frame is not None and error > 0):
             results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280)
             last_frame = frame
@@ -129,6 +143,10 @@ def list_available_cameras():
             break
     return devices
 
+def change_stop(device, stop):
+    global stop_dict
+    with stop_lock:
+        stop_dict[device] = stop
 
 def get_classes():
     return list(model.names.values())

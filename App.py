@@ -4,11 +4,10 @@ from threading import Thread
 
 import cv2
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QFont
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox
 from PyQt5 import QtCore
-import testeCv
 import yoloScript
 
 
@@ -35,21 +34,33 @@ class DispositivoWidget(QWidget):
 
         layout.addLayout(top_layout)
 
+        layout_imagem = QVBoxLayout()
+
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
         pixmap = pixmap.scaledToWidth(700)
         self.image_label.setPixmap(pixmap)
-        layout.addWidget(self.image_label)
-
+        layout_imagem.addWidget(self.image_label, alignment=Qt.AlignCenter)
+        self.pausa_label = QLabel("CAMARA PAUSADA!")
+        font = QFont()
+        font.setBold(True)
+        font.setPointSize(15)
+        self.pausa_label.setFont(font)
+        self.pausa_label.hide()
+        layout_imagem.addWidget(self.pausa_label, alignment=Qt.AlignCenter)
+        layout.addLayout(layout_imagem)
         # Buttons for start, stop, and live
         button_layout = QHBoxLayout()
         self.start_button = QPushButton("Start")
+        self.start_button.clicked.connect(self.start_button_clicked)
         self.stop_button = QPushButton("Stop")
+        self.stop_button.clicked.connect(self.stop_button_clicked)
         self.live_button = QPushButton("Live")
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.live_button)
         layout.addLayout(button_layout)
+        self.start_button.setEnabled(False)
 
         # Connect image clicked signal to slot
         self.image_label.mousePressEvent = self.on_image_clicked
@@ -68,6 +79,18 @@ class DispositivoWidget(QWidget):
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
+
+    def stop_button_clicked(self):
+        self.start_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
+        self.pausa_label.show()
+        yoloScript.change_stop(self.device, True)
+
+    def start_button_clicked(self):
+        self.start_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
+        self.pausa_label.hide()
+        yoloScript.change_stop(self.device, False)
 
 
 class DispositivosWindow(QWidget):
@@ -94,7 +117,7 @@ class DispositivosWindow(QWidget):
         layout.addLayout(dispositivos_layout)
 
         # Add sample dispositivos
-        self.add_dispositivo("Dispositivo 1","0", ["banana"])
+        #self.add_dispositivo("Dispositivo 1","0", ["banana"])
         #self.add_dispositivo("Dispositivo 2")
         #self.add_dispositivo("Dispositivo 3")
 
@@ -177,7 +200,7 @@ class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
     def __init__(self, name="", objToFind=None):
         super().__init__()
-        self.class_names = testeCv.get_classes()
+        self.class_names = yoloScript.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
         layout = QVBoxLayout()
         self.nomeLabel = QLabel("Insira o nome:")
@@ -310,7 +333,8 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Object Detection")
-        self.setGeometry(500, 100, 600, 400)
+        self.setGeometry(500, 100, 1280, 720)
+        self.setGeometry(500, 100, 1280, 720)
 
         # Create layout for main window
         main_layout = QVBoxLayout(self)
