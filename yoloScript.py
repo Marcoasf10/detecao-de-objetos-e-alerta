@@ -10,10 +10,12 @@ model = YOLO(modelo)
 retrieved_frames = {}
 predicted_frames = {}
 stop_dict = {}
+delay_dict = {}
 stop_lock = Lock()
 retrived_frames_lock = Lock()
 predicted_frames_lock = Lock()
-stop_lock = Lock()
+delay_lock = Lock()
+
 
 
 def addDispositivoToPredict(device, classes, queue, delay):
@@ -40,6 +42,7 @@ def diferenceImgs(img1, img2):
 def predict(device, listObjToFind, queue, delay):
     global predicted_frames
     global stop_dict
+    global delay_dict
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -53,6 +56,10 @@ def predict(device, listObjToFind, queue, delay):
         with stop_lock:
             if device in stop_dict:
                 stop = stop_dict[device]
+
+        with delay_lock:
+            if device in delay_dict:
+                delay = delay_dict[device]
         if stop:
             if cap.isOpened():
                 cap.release()
@@ -148,5 +155,12 @@ def change_stop(device, stop):
     with stop_lock:
         stop_dict[device] = stop
 
+def change_delay(device, delay):
+    global delay_dict
+    with delay_lock:
+        delay_dict[device] = delay
+
 def get_classes():
     return list(model.names.values())
+
+

@@ -56,9 +56,15 @@ class DispositivoWidget(QWidget):
         self.stop_button = QPushButton("Stop")
         self.stop_button.clicked.connect(self.stop_button_clicked)
         self.live_button = QPushButton("Live")
+        self.combo_delay_label = QLabel("Delay:")
+        self.combo_delay = QComboBox()
+        self.populate_combo_delay()
+        self.combo_delay.currentIndexChanged.connect(self.change_delay)
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.live_button)
+        button_layout.addWidget(self.combo_delay_label)
+        button_layout.addWidget(self.combo_delay)
         layout.addLayout(button_layout)
         self.start_button.setEnabled(False)
 
@@ -92,6 +98,24 @@ class DispositivoWidget(QWidget):
         self.pausa_label.hide()
         yoloScript.change_stop(self.device, False)
 
+    def populate_combo_delay(self):
+        self.combo_delay.clear()
+        self.combo_delay.addItem("1 segundo", 1)
+        self.combo_delay.addItem("5 segundos", 5)
+        self.combo_delay.addItem("10 segundos", 10)
+        self.combo_delay.addItem("30 segundos", 30)
+        self.combo_delay.addItem("1 minuto", 60)
+        self.combo_delay.addItem("5 minutos", 300)
+        self.combo_delay.addItem("10 minutos", 600)
+        self.combo_delay.addItem("30 minutos", 1800)
+        self.combo_delay.addItem("1 hora", 3600)
+        self.combo_delay.addItem("1h 30m", 5400)
+        self.combo_delay.setCurrentIndex(2)
+
+    def change_delay(self):
+        delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
+        print(delay)
+        yoloScript.change_delay(self.device, delay)
 
 class DispositivosWindow(QWidget):
     def __init__(self):
@@ -122,7 +146,7 @@ class DispositivosWindow(QWidget):
         #self.add_dispositivo("Dispositivo 3")
 
     def add_dispositivo(self, name, device, objToFind):
-        dispositivo_widget = DispositivoWidget(name, device,objToFind)
+        dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
         dispositivo_widget.image_clicked.connect(self.show_image_window)  # Connect signal to slot
         dispositivo_widget.setting_clicked.connect(self.open_device_config_dialog)  # Connect setting signal
@@ -169,8 +193,8 @@ class DispositivosWindow(QWidget):
             device = int(device)
         self.add_dispositivo(name, device, selected_items)
 
-    def open_device_config_dialog(self, name, device,objToFind):
-        device_config_dialog = ConfigurarDispositivo(name, device,objToFind)
+    def open_device_config_dialog(self, name, device, objToFind):
+        device_config_dialog = ConfigurarDispositivo(name, device, objToFind)
         device_config_dialog.done_clicked.connect(self.handle_done_clicked)
         device_config_dialog.exec_()
 
@@ -198,7 +222,7 @@ class ImageWindow(QMainWindow):
 global_devices = []
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
-    def __init__(self, name="", objToFind=None):
+    def __init__(self, name="",device="", objToFind=None):
         super().__init__()
         self.class_names = yoloScript.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
