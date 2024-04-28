@@ -75,7 +75,7 @@ class DispositivoWidget(QWidget):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
-        self.setting_clicked.emit(self.name, self.objToFind)  # Emit device name and existing objects
+        self.setting_clicked.emit(self.name, self.device, self.objToFind)  # Emit device name and existing objects
 
     def update_image(self, frame):
         height, width, channel = frame.shape
