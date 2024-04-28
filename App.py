@@ -15,7 +15,7 @@ class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
     setting_clicked = QtCore.pyqtSignal(str, list)  # Define a signal for setting button clicked
 
-    def __init__(self, name, device,objToFind):
+    def __init__(self, name, device, objToFind):
         super().__init__()
         self.name = name
         self.image_path = "frames/noCamera.jpg"  # Store the image path
@@ -71,7 +71,7 @@ class DispositivoWidget(QWidget):
         # Connect image clicked signal to slot
         self.image_label.mousePressEvent = self.on_image_clicked
 
-    def on_image_clicked(self, event):
+    def on_image_clicked(self):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
@@ -117,6 +117,7 @@ class DispositivoWidget(QWidget):
         print(delay)
         yoloScript.change_delay(self.device, delay)
 
+
 class DispositivosWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -140,11 +141,6 @@ class DispositivosWindow(QWidget):
         dispositivos_layout.addWidget(self.scroll_area)
         layout.addLayout(dispositivos_layout)
 
-        # Add sample dispositivos
-        #self.add_dispositivo("Dispositivo 1","0", ["banana"])
-        #self.add_dispositivo("Dispositivo 2")
-        #self.add_dispositivo("Dispositivo 3")
-
     def add_dispositivo(self, name, device, objToFind):
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
@@ -155,7 +151,6 @@ class DispositivosWindow(QWidget):
         if not self.reading:
             Thread(target=self.readQueue).start()
             self.reading = True
-
 
     def runscript_thread(self, device, objToFind):
         yoloScript.addDispositivoToPredict(device, objToFind, self.queue, 10)
@@ -171,6 +166,7 @@ class DispositivosWindow(QWidget):
             except self.queue.empty:
                 print("Queue is empty.")
             time.sleep(0.5)
+
     def show_image_window(self, name, pixmap):
         print("Device Name:", name)  # Print the device name
         image_window = ImageWindow(pixmap)
@@ -219,10 +215,14 @@ class ImageWindow(QMainWindow):
         image_label.setPixmap(pixmap)
         layout.addWidget(image_label)
 
+
 global_devices = []
+
+
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
-    def __init__(self, name="",device="", objToFind=None):
+
+    def __init__(self, name="", device="", objToFind=None):
         super().__init__()
         self.class_names = yoloScript.get_classes()
         self.setWindowTitle("Configurar Dispositivo")
@@ -321,6 +321,7 @@ class ConfigurarDispositivo(QDialog):
 
     def atualizar_dispositivos(self):
         Thread(target=self.listar_Thread).start()
+
     def listar_Thread(self):
         global global_devices
         self.device_combo_box.clear()
@@ -330,11 +331,13 @@ class ConfigurarDispositivo(QDialog):
         self.listar_dispositivos(global_devices)
         self.label_procura_dispositivo.hide()
         self.atualizar_dispositivos_button.setEnabled(True)
+
     def listar_dispositivos(self, devices):
         if len(devices) > 0:
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
             self.device_combo_box.setCurrentIndex(0)
+
     def toggle_visibility(self, state):
         if state == Qt.Checked:
             self.ipLabeb.show()
