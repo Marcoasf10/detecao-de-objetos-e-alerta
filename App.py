@@ -312,9 +312,13 @@ class ConfigurarDispositivo(QDialog):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
             device = self.ip_line_edit.text()
+            if not name:
+                name = device
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
             device = str(device)
+        if not name:
+            name = str(self.device_combo_box.currentText())
         selected_items = self.selected_items
         self.done_clicked.emit(name, device, selected_items)  # Emit signal with device name and selected items
         self.accept()  # fechar janela
