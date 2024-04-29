@@ -231,8 +231,10 @@ class ConfigurarDispositivo(QDialog):
         self.nomeLineEdit = QLineEdit()
         self.dispositivo_label = QLabel("Escolha o dispositivo:")
         self.device_combo_box = QComboBox()
-        if len(global_devices) > 0:
-            self.listar_dispositivos(global_devices)
+        listed_devices = [widget.device for widget in self.parent().dispositivos_layout]
+        availabe_devices = [device for device in global_devices if device not in listed_devices]
+        if len(availabe_devices) > 0:
+            self.listar_dispositivos(availabe_devices)
         self.label_procura_dispositivo = QLabel("A procurar por dispositivos...")
         self.atualizar_dispositivos_button = QPushButton("Atualizar Dispositivos")
         self.checkBox_IP = QCheckBox("Inserir camera por IP")
@@ -312,13 +314,9 @@ class ConfigurarDispositivo(QDialog):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
             device = self.ip_line_edit.text()
-            if not name:
-                name = device
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
             device = str(device)
-        if not name:
-            name = str(self.device_combo_box.currentText())
         selected_items = self.selected_items
         self.done_clicked.emit(name, device, selected_items)  # Emit signal with device name and selected items
         self.accept()  # fechar janela
