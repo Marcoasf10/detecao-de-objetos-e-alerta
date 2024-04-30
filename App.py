@@ -11,6 +11,35 @@ from PyQt5 import QtCore
 import yoloScript
 
 
+class RoundedButton(QPushButton):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            RoundedButton {
+                background-color: transparent; /* Fundo transparente para o widget */
+            }
+            QPushButton {
+                background-color: #333; /* Cor de fundo */
+                border-style: solid; /* Estilo da borda */
+                border-width: 2px; /* Largura da borda */
+                border-radius: 15px; /* Raio da borda para torná-lo arredondado */
+                border-color: #666; /* Cor da borda */
+                color: #f0f0f0; /* Cor do texto */
+                font-size: 16px; /* Tamanho da fonte */
+                padding: 10px; /* Espaçamento interno */
+            }
+            QPushButton:hover {
+                background-color: #555; /* Cor de fundo ao passar o mouse */
+            }
+            QPushButton:pressed {
+                background-color: #444; /* Cor de fundo ao pressionar */
+            }
+            QPushButton:disabled {
+                background-color: #777; /* Cor de fundo quando desativado */
+                border-color: #999; /* Cor da borda quando desativado */
+                color: #999; /* Cor do texto quando desativado */
+            }
+        """)
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
     setting_clicked = QtCore.pyqtSignal(str, list)  # Define a signal for setting button clicked
@@ -28,7 +57,7 @@ class DispositivoWidget(QWidget):
         top_layout.addWidget(self.label)
 
         # Setting button
-        self.setting_button = QPushButton("Settings")
+        self.setting_button = RoundedButton("Settings")
         self.setting_button.clicked.connect(self.setting_button_clicked)
         top_layout.addWidget(self.setting_button)
 
@@ -51,11 +80,11 @@ class DispositivoWidget(QWidget):
         layout.addLayout(layout_imagem)
         # Buttons for start, stop, and live
         button_layout = QHBoxLayout()
-        self.start_button = QPushButton("Start")
+        self.start_button = RoundedButton("Start")
         self.start_button.clicked.connect(self.start_button_clicked)
-        self.stop_button = QPushButton("Stop")
+        self.stop_button = RoundedButton("Stop")
         self.stop_button.clicked.connect(self.stop_button_clicked)
-        self.live_button = QPushButton("Live")
+        self.live_button = RoundedButton("Live")
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay = QComboBox()
         self.populate_combo_delay()
@@ -126,7 +155,7 @@ class DispositivosWindow(QWidget):
         self.queue = Queue()
         self.dispositivos_dict = {}
         # Button to add dispositivos
-        add_button = QPushButton("Adicionar Dispositivos")
+        add_button = RoundedButton("Adicionar Dispositivos")
         add_button.clicked.connect(self.open_device_ip_window)
         layout.addWidget(add_button)
         self.reading = False
@@ -233,7 +262,7 @@ class ConfigurarDispositivo(QDialog):
         if len(global_devices) > 0:
             self.listar_dispositivos(global_devices)
         self.label_procura_dispositivo = QLabel("A procurar por dispositivos...")
-        self.atualizar_dispositivos_button = QPushButton("Atualizar Dispositivos")
+        self.atualizar_dispositivos_button = RoundedButton("Atualizar Dispositivos")
         self.checkBox_IP = QCheckBox("Inserir camera por IP")
         self.checkBox_IP.stateChanged.connect(self.toggle_visibility)
         self.atualizar_dispositivos_button.clicked.connect(self.atualizar_dispositivos)
@@ -241,7 +270,7 @@ class ConfigurarDispositivo(QDialog):
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
         self.ip_line_edit.setText(name)
-        self.testButton = QPushButton("Test connection")
+        self.testButton = RoundedButton("Test connection")
 
         # List widget for selecting objects to detect
         self.objetosLabeb = QLabel("Selecione objetos a detetar")
@@ -261,7 +290,7 @@ class ConfigurarDispositivo(QDialog):
             self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
 
         # Button to add objects
-        self.doneButton = QPushButton("Done")
+        self.doneButton = RoundedButton("Done")
         self.doneButton.clicked.connect(self.on_done_clicked)
 
         # Add widgets to layout
@@ -362,6 +391,11 @@ class MainWindow(QWidget):
         self.setGeometry(500, 100, 1280, 720)
         self.setGeometry(500, 100, 1280, 720)
 
+        self.setStyleSheet("""
+                    MainWindow {
+                        background-color: #2B2B2B; /* Cinza escuro para a janela principal */
+                    }
+                """)
         # Create layout for main window
         main_layout = QVBoxLayout(self)
 
@@ -369,11 +403,11 @@ class MainWindow(QWidget):
         button_layout = QHBoxLayout()
 
         # Create buttons for "Dispositivos" and "Alertas"
-        dispositivos_button = QPushButton("Dispositivos")
+        dispositivos_button = RoundedButton("Dispositivos")
         dispositivos_button.clicked.connect(self.show_dispositivos)
         button_layout.addWidget(dispositivos_button)
 
-        alertas_button = QPushButton("Alertas")
+        alertas_button = RoundedButton("Alertas")
         alertas_button.clicked.connect(self.show_alertas)
         button_layout.addWidget(alertas_button)
 
@@ -404,5 +438,15 @@ class MainWindow(QWidget):
 if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
+    window.setStyleSheet("""
+            DispositivoWidget {
+                background-color: #3B3B3B; /* Cor de fundo mais clara */
+                border-radius: 10px; /* Cantos arredondados */
+            }
+            ConfigurarDispositivo {
+                background-color: #3B3B3B; /* Cor de fundo mais clara */
+                border-radius: 10px; /* Cantos arredondados */
+            }
+    """)
     window.show()
     app.exec_()

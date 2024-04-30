@@ -123,6 +123,9 @@ def predict(device, listObjToFind, queue, delay):
                         print(f"ID: {int(id)} -> Mover")
         i += 1
         while time.time() - start_time <= delay:
+            with delay_lock:
+                if device in delay_dict:
+                    delay = delay_dict[device]
             cap.grab()
     cap.release()
 
