@@ -104,7 +104,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue, del
             print("Error diference: ", error)
         # if img not equal last img:
         if last_frame is None or (last_frame is not None and error > 15):
-            results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
+            results = local_model.track(frame, save=True, project="frames", exist_ok=True, save_crop=True, classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280)
             last_frame = frame
         with predicted_frames_lock:

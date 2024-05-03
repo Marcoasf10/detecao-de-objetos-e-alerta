@@ -139,7 +139,7 @@ class MainWindow(QWidget):
         devices = [item.data(1) for item in self.listDevices.selectedItems()]
         #devices.append("http://62.131.207.209:8080/cam_1.cgi")
         devices.append("http://97.68.104.34:80/mjpg/video.mjpg")
-        #devices.append("http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444")
+            #devices.append("http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444")
         #devices.append("rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov")
 
         self.image_window = ImageViewerWindow(devices)

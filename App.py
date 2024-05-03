@@ -3,43 +3,146 @@ from multiprocessing import Queue
 from threading import Thread
 
 import cv2
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage, QFont
+import numpy as np
+from PyQt5.QtCore import Qt, QTimer, QSize, QRect
+from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
-    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox
+    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
+    QSizePolicy, QScrollBar
 from PyQt5 import QtCore
 import yoloScript
 
+class SplashScreen(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Spash Screen Example')
+        self.setFixedSize(1100, 500)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
 
-class RoundedButton(QPushButton):
+        self.counter = 0
+        self.n = 300  # total instance
+
+        self.initUI()
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.loading)
+        self.timer.start(30)
+
+    def initUI(self):
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.frame = QFrame()
+        layout.addWidget(self.frame)
+
+        self.labelTitle = QLabel(self.frame)
+        self.labelTitle.setObjectName('LabelTitle')
+
+        # center labels
+        self.labelTitle.resize(self.width() - 10, 150)
+        self.labelTitle.move(0, 40)  # x, y
+        self.labelTitle.setText('Splash Screen')
+        self.labelTitle.setAlignment(Qt.AlignCenter)
+
+        self.labelDescription = QLabel(self.frame)
+        self.labelDescription.resize(self.width() - 10, 50)
+        self.labelDescription.move(0, self.labelTitle.height())
+        self.labelDescription.setObjectName('LabelDesc')
+        self.labelDescription.setText('<strong>Working on Task #1</strong>')
+        self.labelDescription.setAlignment(Qt.AlignCenter)
+
+        self.progressBar = QProgressBar(self.frame)
+        self.progressBar.resize(self.width() - 200 - 10, 50)
+        self.progressBar.move(100, self.labelDescription.y() + 130)
+        self.progressBar.setAlignment(Qt.AlignCenter)
+        self.progressBar.setFormat('%p%')
+        self.progressBar.setTextVisible(True)
+        self.progressBar.setRange(0, self.n)
+        self.progressBar.setValue(20)
+
+        self.labelLoading = QLabel(self.frame)
+        self.labelLoading.resize(self.width() - 10, 50)
+        self.labelLoading.move(0, self.progressBar.y() + 70)
+        self.labelLoading.setObjectName('LabelLoading')
+        self.labelLoading.setAlignment(Qt.AlignCenter)
+        self.labelLoading.setText('loading...')
+
+    def loading(self):
+        self.progressBar.setValue(self.counter)
+
+        if self.counter == int(self.n * 0.3):
+            self.labelDescription.setText('<strong>Working on Task #2</strong>')
+        elif self.counter == int(self.n * 0.6):
+            self.labelDescription.setText('<strong>Working on Task #3</strong>')
+        elif self.counter >= self.n:
+            self.timer.stop()
+            self.close()
+
+            time.sleep(1)
+
+            self.myApp = MainWindow()
+            self.myApp.show()
+
+        self.counter += 1
+
+class LightButton(QPushButton):
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                padding: 10px;
+                color: #FFFFFF;
+                background-color: #5B5B5B;
+            }
+        """)
+
+class WidgetButton(QPushButton):
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                padding: 10px;
+                color: #FFFFFF;
+                background-color: #D9D9D9;
+            }
+        """)
+class WidgetPressedButton(QPushButton):
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                padding: 10px;
+                color: #FFFFFF;
+                background-color: #5B5B5B;
+            }
+        """)
+
+
+class DarkButton(QPushButton):
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
         self.setStyleSheet("""
-            RoundedButton {
-                background-color: transparent; /* Fundo transparente para o widget */
-            }
             QPushButton {
-                background-color: #333; /* Cor de fundo */
-                border-style: solid; /* Estilo da borda */
-                border-width: 2px; /* Largura da borda */
-                border-radius: 15px; /* Raio da borda para torná-lo arredondado */
-                border-color: #666; /* Cor da borda */
-                color: #f0f0f0; /* Cor do texto */
-                font-size: 16px; /* Tamanho da fonte */
-                padding: 10px; /* Espaçamento interno */
-            }
-            QPushButton:hover {
-                background-color: #555; /* Cor de fundo ao passar o mouse */
-            }
-            QPushButton:pressed {
-                background-color: #444; /* Cor de fundo ao pressionar */
-            }
-            QPushButton:disabled {
-                background-color: #777; /* Cor de fundo quando desativado */
-                border-color: #999; /* Cor da borda quando desativado */
-                color: #999; /* Cor do texto quando desativado */
+                border: none;
+                border-radius: 10px;
+                font-size: 16px;
+                padding: 10px;
+                color: #FFFFFF;
+                background-color: #292929;
             }
         """)
+
+
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
     setting_clicked = QtCore.pyqtSignal(str, list)  # Define a signal for setting button clicked
@@ -57,13 +160,14 @@ class DispositivoWidget(QWidget):
         top_layout.addWidget(self.label)
 
         # Setting button
-        self.setting_button = RoundedButton("Settings")
+        self.setting_button = LightButton("Settings")
         self.setting_button.clicked.connect(self.setting_button_clicked)
         top_layout.addWidget(self.setting_button)
 
         layout.addLayout(top_layout)
-
         layout_imagem = QVBoxLayout()
+
+        self.iconPause = QIcon("icons/pause_circle.png")
 
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
@@ -78,13 +182,22 @@ class DispositivoWidget(QWidget):
         self.pausa_label.hide()
         layout_imagem.addWidget(self.pausa_label, alignment=Qt.AlignCenter)
         layout.addLayout(layout_imagem)
-        # Buttons for start, stop, and live
         button_layout = QHBoxLayout()
-        self.start_button = RoundedButton("Start")
+        self.start_button = WidgetPressedButton()
+        self.start_button.setIcon(QIcon("icons/play.png"))
+        self.start_button.setIconSize(QSize(40, 40))
+        self.start_button.setFixedSize(50, 50)
         self.start_button.clicked.connect(self.start_button_clicked)
-        self.stop_button = RoundedButton("Stop")
+        self.stop_button = WidgetButton()
+        self.stop_button.setIcon(QIcon("icons/pause.png"))
+        self.stop_button.setIconSize(QSize(40, 40))
+        self.stop_button.setFixedSize(50, 50)
         self.stop_button.clicked.connect(self.stop_button_clicked)
-        self.live_button = RoundedButton("Live")
+        self.live_button = WidgetButton()
+        self.live_button.setIcon(QIcon("icons/live.png"))
+        self.live_button.clicked.connect(self.live_button_clicked)
+        self.live_button.setIconSize(QSize(40, 40))
+        self.live_button.setFixedSize(50, 50)
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay = QComboBox()
         self.populate_combo_delay()
@@ -95,10 +208,26 @@ class DispositivoWidget(QWidget):
         button_layout.addWidget(self.combo_delay_label)
         button_layout.addWidget(self.combo_delay)
         layout.addLayout(button_layout)
-        self.start_button.setEnabled(False)
+        self.start_button_clicked()
 
         # Connect image clicked signal to slot
         self.image_label.mousePressEvent = self.on_image_clicked
+
+    def sobrepor_icon_centralizado(self, frame, icon):
+        frame_height = frame.height()
+        frame_width = frame.width()
+        icon_height = icon.actualSize(QSize(frame_width, frame_height)).height()
+        icon_width = icon.actualSize(QSize(frame_width, frame_height)).width()
+
+        x_offset = (frame_width - icon_width) // 2
+        y_offset = (frame_height - icon_height) // 2
+
+        frame_with_icon = frame.copy()
+        painter = QPainter(frame_with_icon)
+        icon.paint(painter, QRect(x_offset, y_offset, icon_width, icon_height))
+        painter.end()
+
+        return frame_with_icon
 
     def on_image_clicked(self):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
@@ -115,15 +244,26 @@ class DispositivoWidget(QWidget):
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
 
+    def start_button_clicked(self):
+        self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+        self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
+        self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
+        self.pausa_label.hide()
+        yoloScript.change_stop(self.device, False)
+
     def stop_button_clicked(self):
-        self.start_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
+        self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
+        self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+        self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.pausa_label.show()
+        '''image_stopped = self.sobrepor_icon_centralizado(self.image_label.pixmap().toImage(), self.iconPause)
+        self.update_image(image_stopped)'''
         yoloScript.change_stop(self.device, True)
 
-    def start_button_clicked(self):
-        self.start_button.setEnabled(False)
-        self.stop_button.setEnabled(True)
+    def live_button_clicked(self):
+        self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
+        self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
+        self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.pausa_label.hide()
         yoloScript.change_stop(self.device, False)
 
@@ -147,6 +287,24 @@ class DispositivoWidget(QWidget):
         yoloScript.change_delay(self.device, delay)
 
 
+class StyledScrollBar(QScrollBar):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setStyleSheet("""
+            QScrollBar:vertical {
+                background-color: #FFFFFF; /* Set background color to white for vertical scrollbar */
+                width: 20px; /* Set width of scrollbar */
+                border-radius: 10px; /* Set border radius for rounded corners */
+            }
+
+            QScrollBar:horizontal {
+                background-color: #FFFFFF; /* Set background color to white for horizontal scrollbar */
+                height: 20px; /* Set height of scrollbar */
+                border-radius: 10px; /* Set border radius for rounded corners */
+            }
+        """)
+
+
 class DispositivosWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -154,22 +312,64 @@ class DispositivosWindow(QWidget):
         layout = QVBoxLayout(self)
         self.queue = Queue()
         self.dispositivos_dict = {}
-        # Button to add dispositivos
-        add_button = RoundedButton("Adicionar Dispositivos")
-        add_button.clicked.connect(self.open_device_ip_window)
-        layout.addWidget(add_button)
+
+        self.add_button = LightButton("+ Adicionar Dispositivos")
+        self.add_button.clicked.connect(self.open_device_ip_window)
+
+        self.mosaicoButton = LightButton()
+        self.mosaicoButton.setIcon(QIcon("icons/mosaico_2.png"))
+        self.mosaicoButton.clicked.connect(self.layout_mosaico)
+
+        self.horizontalbutton = LightButton()
+        self.horizontalbutton.setIcon(QIcon("icons/mosaico.png"))
+        self.horizontalbutton.clicked.connect(self.layout_horizontal)
+        self.mosaicoButton.setIconSize(QSize(35, 35))
+        self.mosaicoButton.setFixedSize(50, 50)
+        self.horizontalbutton.setIconSize(QSize(40, 40))
+        self.horizontalbutton.setFixedSize(50, 50)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch(1)
+        buttons_layout.addWidget(self.add_button)
+        buttons_layout.addStretch(1)
+
+        buttons_layout.addWidget(self.mosaicoButton)
+        buttons_layout.addWidget(self.horizontalbutton)
+
+        buttons_layout.setContentsMargins(0, 40, 0, 0)
+
+        layout.addLayout(buttons_layout)
+
         self.reading = False
 
         # Horizontal layout to list dispositivos adicionados
         dispositivos_layout = QHBoxLayout()
         self.scroll_area = QScrollArea()
+        self.scroll_area.setStyleSheet("""
+                    QScrollArea {
+                        background-color: #FFFFFF; /* Set background color to white */
+                        border-radius: 10px; /* Set border radius to 10px for rounded corners */
+                    }
+                """)
+        self.scroll_area.setVerticalScrollBar(StyledScrollBar())
+
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("background-color: transparent;")
         self.scroll_widget = QWidget()
         self.dispositivos_layout = QHBoxLayout(self.scroll_widget)
         self.scroll_area.setWidget(self.scroll_widget)
         dispositivos_layout.addWidget(self.scroll_area)
+        dispositivos_layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(dispositivos_layout)
+        self.layout_mosaico()
 
+    def layout_mosaico(self):
+        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
+        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+
+    def layout_horizontal(self):
+        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
+        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
     def add_dispositivo(self, name, device, objToFind):
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
@@ -192,6 +392,7 @@ class DispositivosWindow(QWidget):
                     self.timer.stop()
                 for device, frame in frames.items():
                     self.dispositivos_dict[device].update_image(frame)
+                    print("frame",type(frame))
             except self.queue.empty:
                 print("Queue is empty.")
             time.sleep(0.5)
@@ -247,6 +448,7 @@ class ImageWindow(QMainWindow):
 
 global_devices = []
 
+
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
 
@@ -262,7 +464,7 @@ class ConfigurarDispositivo(QDialog):
         if len(global_devices) > 0:
             self.listar_dispositivos(global_devices)
         self.label_procura_dispositivo = QLabel("A procurar por dispositivos...")
-        self.atualizar_dispositivos_button = RoundedButton("Atualizar Dispositivos")
+        self.atualizar_dispositivos_button = DarkButton("Atualizar Dispositivos")
         self.checkBox_IP = QCheckBox("Inserir camera por IP")
         self.checkBox_IP.stateChanged.connect(self.toggle_visibility)
         self.atualizar_dispositivos_button.clicked.connect(self.atualizar_dispositivos)
@@ -270,7 +472,7 @@ class ConfigurarDispositivo(QDialog):
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
         self.ip_line_edit.setText(name)
-        self.testButton = RoundedButton("Test connection")
+        self.testButton = DarkButton("Test connection")
 
         # List widget for selecting objects to detect
         self.objetosLabeb = QLabel("Selecione objetos a detetar")
@@ -290,7 +492,7 @@ class ConfigurarDispositivo(QDialog):
             self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
 
         # Button to add objects
-        self.doneButton = RoundedButton("Done")
+        self.doneButton = DarkButton("Done")
         self.doneButton.clicked.connect(self.on_done_clicked)
 
         # Add widgets to layout
@@ -389,64 +591,102 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Object Detection")
         self.setGeometry(500, 100, 1280, 720)
-        self.setGeometry(500, 100, 1280, 720)
-
         self.setStyleSheet("""
-                    MainWindow {
-                        background-color: #2B2B2B; /* Cinza escuro para a janela principal */
-                    }
-                """)
-        # Create layout for main window
+               MainWindow {
+                   background-color: #292929;
+               }
+               QPushButton {
+                   border: none;
+                   font-size: 16px;
+                   padding: 10px;
+                   color: #FFFFFF;
+                   margin: 0px;
+               }
+               #dark_button {
+                   background-color: #292929;
+               }
+               #light_button {
+                   background-color: #5B5B5B;
+               }
+           """)
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Create horizontal layout for buttons
-        button_layout = QHBoxLayout()
+        # Layout horizontal para os botões, centralizando-os horizontalmente
+        self.button_layout = QHBoxLayout()
+        self.button_layout.setAlignment(Qt.AlignCenter)
+        self.button_layout.setSpacing(0)  # Removendo o espaçamento entre os botões
 
-        # Create buttons for "Dispositivos" and "Alertas"
-        dispositivos_button = RoundedButton("Dispositivos")
-        dispositivos_button.clicked.connect(self.show_dispositivos)
-        button_layout.addWidget(dispositivos_button)
+        self.dispositivos_button = QPushButton("Dispositivos")
+        self.dispositivos_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.dispositivos_button.clicked.connect(self.show_dispositivos)
+        self.button_layout.addWidget(self.dispositivos_button)
 
-        alertas_button = RoundedButton("Alertas")
-        alertas_button.clicked.connect(self.show_alertas)
-        button_layout.addWidget(alertas_button)
+        self.alertas_button = QPushButton("Alertas")
+        self.alertas_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.alertas_button.clicked.connect(self.show_alertas)
+        self.button_layout.addWidget(self.alertas_button)
 
-        # Add button layout to main layout
-        main_layout.addLayout(button_layout)
+        main_layout.addLayout(self.button_layout)
 
-        # Create stacked layout to hold different windows
         self.stacked_layout = QStackedLayout()
-
-        # Create instances of DispositivosWindow and AlertasWindow
         self.dispositivos_window = DispositivosWindow()
         self.alertas_window = AlertasWindow()
-
-        # Add windows to stacked layout
         self.stacked_layout.addWidget(self.dispositivos_window)
         self.stacked_layout.addWidget(self.alertas_window)
-
-        # Add stacked layout to main layout
         main_layout.addLayout(self.stacked_layout)
+
+        # Definindo a página inicial como Dispositivos
+        self.show_dispositivos()
 
     def show_dispositivos(self):
         self.stacked_layout.setCurrentIndex(0)
+        self.dispositivos_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
+        self.alertas_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-left-radius:20%; font-size: 20px; padding:10px 0")
 
     def show_alertas(self):
         self.stacked_layout.setCurrentIndex(1)
-
+        self.dispositivos_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
+        self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
 
 if __name__ == '__main__':
     app = QApplication([])
-    window = MainWindow()
-    window.setStyleSheet("""
-            DispositivoWidget {
-                background-color: #3B3B3B; /* Cor de fundo mais clara */
-                border-radius: 10px; /* Cantos arredondados */
-            }
-            ConfigurarDispositivo {
-                background-color: #3B3B3B; /* Cor de fundo mais clara */
-                border-radius: 10px; /* Cantos arredondados */
-            }
-    """)
+    window = SplashScreen()
+    window.setStyleSheet('''
+               #LabelTitle {
+                   font-size: 60px;
+                   color: #93deed;
+               }
+
+               #LabelDesc {
+                   font-size: 30px;
+                   color: #c2ced1;
+               }
+
+               #LabelLoading {
+                   font-size: 30px;
+                   color: #e8e8eb;
+               }
+
+               QFrame {
+                   background-color: #2F4454;
+                   color: rgb(220, 220, 220);
+               }
+
+               QProgressBar {
+                   background-color: #DA7B93;
+                   color: rgb(200, 200, 200);
+                   border-style: none;
+                   border-radius: 10px;
+                   text-align: center;
+                   font-size: 30px;
+               }
+
+               QProgressBar::chunk {
+                   border-radius: 10px;
+                   background-color: qlineargradient(spread:pad x1:0, x2:1, y1:0.511364, y2:0.523, stop:0 #1C3334, stop:1 #376E6F);
+               }
+           ''')
     window.show()
     app.exec_()
+    print('Closing Window...')
