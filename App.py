@@ -154,34 +154,42 @@ class DispositivoWidget(QWidget):
         self.objToFind = objToFind
         layout = QVBoxLayout(self)
         self.device = device
-        # Create a horizontal layout for the label and setting button
-        top_layout = QHBoxLayout()
         self.label = QLabel(name)
-        top_layout.addWidget(self.label)
+        self.label.setStyleSheet("font-size: 25px; color: #FFFFFF")
 
         # Setting button
-        self.setting_button = LightButton("Settings")
-        self.setting_button.clicked.connect(self.setting_button_clicked)
-        top_layout.addWidget(self.setting_button)
+        self.settings_button = WidgetButton()
+        self.settings_button.setIcon(QIcon("icons/settings.png"))
+        self.settings_button.setIconSize(QSize(40, 40))
+        self.settings_button.setFixedSize(50, 50)
+        self.settings_button.clicked.connect(self.setting_button_clicked)
 
-        layout.addLayout(top_layout)
-        layout_imagem = QVBoxLayout()
+        self.expand_button = WidgetButton()
+        self.expand_button.setIcon(QIcon("icons/expand.png"))
+        self.expand_button.setIconSize(QSize(40, 40))
+        self.expand_button.setFixedSize(50, 50)
+        self.expand_button.clicked.connect(self.expand_button_clicked)
+
+        layout_imagem = QHBoxLayout()
 
         self.iconPause = QIcon("icons/pause_circle.png")
 
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
-        pixmap = pixmap.scaledToWidth(700)
+        pixmap = pixmap.scaledToWidth(500)
         self.image_label.setPixmap(pixmap)
-        layout_imagem.addWidget(self.image_label, alignment=Qt.AlignCenter)
-        self.pausa_label = QLabel("CAMARA PAUSADA!")
-        font = QFont()
-        font.setBold(True)
-        font.setPointSize(15)
-        self.pausa_label.setFont(font)
-        self.pausa_label.hide()
-        layout_imagem.addWidget(self.pausa_label, alignment=Qt.AlignCenter)
+        settings_layout = QVBoxLayout()
+        settings_layout.addWidget(self.settings_button, alignment=Qt.AlignTop)
+        settings_layout.addWidget(self.expand_button, alignment=Qt.AlignTop)
+        settings_layout.addStretch()
+        layout_imagem.addWidget(self.image_label)
+        layout_imagem.addLayout(settings_layout)
+
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.label)
+        layout.addLayout(top_layout)
         layout.addLayout(layout_imagem)
+
         button_layout = QHBoxLayout()
         self.start_button = WidgetPressedButton()
         self.start_button.setIcon(QIcon("icons/play.png"))
@@ -199,7 +207,37 @@ class DispositivoWidget(QWidget):
         self.live_button.setIconSize(QSize(40, 40))
         self.live_button.setFixedSize(50, 50)
         self.combo_delay_label = QLabel("Delay:")
+        self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
         self.combo_delay = QComboBox()
+        combo_style = """
+            QComboBox {
+                font-size: 15px;
+                background-color: #D9D9D9;
+                color: #000000;
+                border: none;
+                border-radius: 10px;
+                padding: 10px;
+            }
+            QComboBox::drop-down {
+                border: 0px;
+                background-color: #D9D9D9;
+                margin-right: 20px;
+            }
+            QComboBox::down-arrow {
+                image: url(icons/dropdown.png);
+                width: 20px;
+                height: 20px;
+            }
+            QComboBox::item {
+                background-color: #5B5B5B;
+                color: #FFFFFF;
+            }
+            QComboBox::item:!selected {
+                background-color: #D9D9D9;
+                color: #000000;
+            }   
+        """
+        self.combo_delay.setStyleSheet(combo_style)
         self.populate_combo_delay()
         self.combo_delay.currentIndexChanged.connect(self.change_delay)
         button_layout.addWidget(self.start_button)
@@ -211,7 +249,7 @@ class DispositivoWidget(QWidget):
         self.start_button_clicked()
 
         # Connect image clicked signal to slot
-        self.image_label.mousePressEvent = self.on_image_clicked
+        #self.image_label.mousePressEvent = self.on_image_clicked
 
     def sobrepor_icon_centralizado(self, frame, icon):
         frame_height = frame.height()
@@ -229,7 +267,7 @@ class DispositivoWidget(QWidget):
 
         return frame_with_icon
 
-    def on_image_clicked(self):
+    def expand_button_clicked(self):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
@@ -248,14 +286,12 @@ class DispositivoWidget(QWidget):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
-        self.pausa_label.hide()
         yoloScript.change_stop(self.device, False)
 
     def stop_button_clicked(self):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
-        self.pausa_label.show()
         '''image_stopped = self.sobrepor_icon_centralizado(self.image_label.pixmap().toImage(), self.iconPause)
         self.update_image(image_stopped)'''
         yoloScript.change_stop(self.device, True)
@@ -264,7 +300,6 @@ class DispositivoWidget(QWidget):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-        self.pausa_label.hide()
         yoloScript.change_stop(self.device, False)
 
     def populate_combo_delay(self):
@@ -357,11 +392,12 @@ class DispositivosWindow(QWidget):
         self.scroll_area.setStyleSheet("background-color: transparent;")
         self.scroll_widget = QWidget()
         self.dispositivos_layout = QHBoxLayout(self.scroll_widget)
+        self.dispositivos_layout.setAlignment(Qt.AlignLeft)
         self.scroll_area.setWidget(self.scroll_widget)
         dispositivos_layout.addWidget(self.scroll_area)
         dispositivos_layout.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(dispositivos_layout)
-        self.layout_mosaico()
+        self.layout_horizontal()
 
     def layout_mosaico(self):
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
