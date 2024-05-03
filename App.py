@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QTimer, QSize, QRect
 from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
-    QSizePolicy, QScrollBar
+    QSizePolicy, QScrollBar, QAbstractItemView
 from PyQt5 import QtCore
 import yoloScript
 
@@ -301,6 +301,7 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         yoloScript.change_stop(self.device, False)
+        yoloScript.change_delay(self.device, 0)
 
     def populate_combo_delay(self):
         self.combo_delay.clear()
@@ -490,7 +491,63 @@ class ConfigurarDispositivo(QDialog):
 
     def __init__(self, name="", device="", objToFind=None):
         super().__init__()
+        self.setStyleSheet("""
+                       ConfigurarDispositivo {
+                           background-color: #5B5B5B;
+                       }
+                       QLineEdit {
+                           background-color: #D9D9D9;
+                           border: none;
+                           font-size: 16px;
+                           padding: 5px;
+                           color: #000000;
+                           margin: 0px;
+                           border-radius: 10px;
+                       }
+                       QLabel {
+                            font-size: 16px;
+                            color: #FFFFFF;
+                       }
+                       QComboBox {
+                            font-size: 15px;
+                            background-color: #D9D9D9;
+                            color: #000000;
+                            border: none;
+                            border-radius: 10px;
+                            padding: 5px;
+                        }
+                        QComboBox::drop-down {
+                            border: 0px;
+                            background-color: #D9D9D9;
+                            margin-right: 20px;
+                        }
+                        QComboBox::down-arrow {
+                            image: url(icons/dropdown.png);
+                            width: 20px;
+                            height: 20px;
+                        }
+                        QComboBox::item {
+                            background-color: #5B5B5B;
+                            color: #FFFFFF;
+                        }
+                        QComboBox::item:!selected {
+                            background-color: #D9D9D9;
+                            color: #000000;
+                        }
+                        QListWidget {
+                            font-size: 14px;
+                            border-radius: 10px;
+                        }
+                        QListWidget::item {
+                            height: 20px;
+                        }
+                        QListView::item:selected{
+                            background-color: #D9D9D9;
+                            color: #000000;
+                        }
+                   """)
         self.class_names = yoloScript.get_classes()
+        self.class_names_selected = []
         self.setWindowTitle("Configurar Dispositivo")
         layout = QVBoxLayout()
         self.nomeLabel = QLabel("Insira o nome:")
@@ -502,6 +559,7 @@ class ConfigurarDispositivo(QDialog):
         self.label_procura_dispositivo = QLabel("A procurar por dispositivos...")
         self.atualizar_dispositivos_button = DarkButton("Atualizar Dispositivos")
         self.checkBox_IP = QCheckBox("Inserir camera por IP")
+        self.checkBox_IP.setStyleSheet("font-size: 16px; color: #FFFFFF")
         self.checkBox_IP.stateChanged.connect(self.toggle_visibility)
         self.atualizar_dispositivos_button.clicked.connect(self.atualizar_dispositivos)
         # Line edit for entering device IP
@@ -510,27 +568,45 @@ class ConfigurarDispositivo(QDialog):
         self.ip_line_edit.setText(name)
         self.testButton = DarkButton("Test connection")
 
+        self.layout_objetos = QHBoxLayout()
+        self.layout_selected = QVBoxLayout()
+        self.layout_availave = QVBoxLayout()
+
         # List widget for selecting objects to detect
-        self.objetosLabeb = QLabel("Selecione objetos a detetar")
+        self.procurar_objetos_label = QLabel("Selecionar objetos a detetar")
+        self.objetosLabeb = QLabel("Objetos disponíveis")
+        self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
         self.search_bar = QLineEdit()
+        self.search_bar_selected = QLineEdit()
         self.search_bar.setPlaceholderText("Search...")
+        self.search_bar_selected.setPlaceholderText("Search...")
         self.search_bar.textChanged.connect(self.filter_list)
+        self.search_bar_selected.textChanged.connect(self.filter_list_selected)
         self.availableObjects = QListWidget()
+        self.availableObjects.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.selectedObects = QListWidget()
         self.availableObjects.addItems(sorted(self.class_names))
-        self.selected_items = []
-        self.selected_objects_label = QLabel("Selected Objects: ")
-        if objToFind:
-            for item in objToFind:
-                items = self.availableObjects.findItems(item, Qt.MatchExactly)
-                for i in items:
-                    i.setSelected(True)
-            self.selected_items = objToFind
-            self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
+        self.objectsSelected = QListWidget()
+        self.objectsSelected.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.buttonRemove = DarkButton("Remove (-)")
+        self.buttonAdd = DarkButton("Add (+)")
+        self.buttonAdd.clicked.connect(self.buttonAddf)
+        self.buttonRemove.clicked.connect(self.buttonRemovef)
 
         # Button to add objects
         self.doneButton = DarkButton("Done")
         self.doneButton.clicked.connect(self.on_done_clicked)
 
+        self.layout_selected.addWidget(self.search_bar_selected)
+        self.layout_selected.addWidget(self.objetos_selecionados_labeb)
+        self.layout_selected.addWidget(self.objectsSelected)
+        self.layout_selected.addWidget(self.buttonRemove)
+        self.layout_availave.addWidget(self.search_bar)
+        self.layout_availave.addWidget(self.objetosLabeb)
+        self.layout_availave.addWidget(self.availableObjects)
+        self.layout_availave.addWidget(self.buttonAdd)
+        self.layout_objetos.addLayout(self.layout_selected)
+        self.layout_objetos.addLayout(self.layout_availave)
         # Add widgets to layout
         layout.addWidget(self.nomeLabel)
         layout.addWidget(self.nomeLineEdit)
@@ -542,10 +618,8 @@ class ConfigurarDispositivo(QDialog):
         layout.addWidget(self.ip_line_edit)
         layout.addWidget(self.testButton)
         layout.addWidget(self.checkBox_IP)
-        layout.addWidget(self.objetosLabeb)
-        layout.addWidget(self.search_bar)
-        layout.addWidget(self.availableObjects)
-        layout.addWidget(self.selected_objects_label)
+        layout.addWidget(self.procurar_objetos_label, alignment=Qt.AlignCenter)
+        layout.addLayout(self.layout_objetos)
         layout.addWidget(self.doneButton)
         self.ipLabeb.hide()
         self.ip_line_edit.hide()
@@ -554,25 +628,39 @@ class ConfigurarDispositivo(QDialog):
 
         self.setLayout(layout)
 
-        # Connect itemClicked signal to update label
-        self.availableObjects.itemClicked.connect(self.update_selected_objects_label)
 
     def filter_list(self):
         search_text = self.search_bar.text().lower()
-        filtered_items = [item for item in self.class_names if search_text in item.lower()]
         self.availableObjects.clear()
+        filtered_items = [item for item in self.class_names if search_text in item.lower()]
         self.availableObjects.addItems(sorted(filtered_items))
 
-    def update_selected_objects_label(self):
-        selected_item = self.availableObjects.currentItem()
-        if selected_item:
-            selected_text = selected_item.text()
-            if selected_text in self.selected_items:
-                self.selected_items.remove(selected_text)  # Remove the item if already selected
-            else:
-                self.selected_items.append(selected_text)  # Add the item if not already selected
-            # Update the label to show all selected items
-            self.selected_objects_label.setText("Selected Objects: " + ", ".join(self.selected_items))
+    def buttonAddf(self):
+        selected_items = self.availableObjects.selectedItems()
+        for item in selected_items:
+            if self.objectsSelected.findItems(item.text(), Qt.MatchExactly) == []:
+                self.objectsSelected.addItem(item.text())
+                self.availableObjects.takeItem(self.availableObjects.row(item))
+                self.class_names.remove(item.text())
+                self.class_names_selected.append(item.text())
+        self.repaint()
+
+    def buttonRemovef(self):
+        selected_items = self.objectsSelected.selectedItems()
+        for item in selected_items:
+            if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
+                self.objectsSelected.takeItem(self.objectsSelected.row(item))
+                self.availableObjects.addItem(item.text())
+                self.class_names.append(item.text())
+                self.class_names_selected.remove(item.text())
+        self.availableObjects.sortItems()
+        self.repaint()
+
+    def filter_list_selected(self):
+        search_text = self.search_bar_selected.text().lower()
+        self.objectsSelected.clear()
+        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
+        self.objectsSelected.addItems(sorted(filtered_items))
 
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
@@ -581,7 +669,7 @@ class ConfigurarDispositivo(QDialog):
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
             device = str(device)
-        selected_items = self.selected_items
+        selected_items = self.class_names_selected
         self.done_clicked.emit(name, device, selected_items)  # Emit signal with device name and selected items
         self.accept()  # fechar janela
 

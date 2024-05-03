@@ -82,7 +82,7 @@ def predict(device, listObjToFind, graphs, cpu_shared, memory_shared, queue, del
     last_frame = None
     error = 0
 
-    while cap.isOpened() and i < 40:
+    while cap.isOpened():
         # dar tempo para câmara inicializar
         if last_frame is None:
             time.sleep(0.1)
