@@ -145,7 +145,6 @@ class DarkButton(QPushButton):
 
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
-    setting_clicked = QtCore.pyqtSignal(str, list)  # Define a signal for setting button clicked
 
     def __init__(self, name, device, objToFind):
         super().__init__()
@@ -271,7 +270,9 @@ class DispositivoWidget(QWidget):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
-        self.setting_clicked.emit(self.name, self.device, self.objToFind)  # Emit device name and existing objects
+        config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind)
+        config_dialog.exec_()
+
 
     def update_image(self, frame):
         height, width, channel = frame.shape
@@ -411,7 +412,6 @@ class DispositivosWindow(QWidget):
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
         dispositivo_widget.image_clicked.connect(self.show_image_window)  # Connect signal to slot
-        dispositivo_widget.setting_clicked.connect(self.open_device_config_dialog)  # Connect setting signal
         self.dispositivos_layout.addWidget(dispositivo_widget)
         Thread(target=self.runscript_thread, args=(device, objToFind)).start()
         if not self.reading:
@@ -446,9 +446,10 @@ class DispositivosWindow(QWidget):
 
     def handle_done_clicked(self, name, device, selected_items):
         for widget in self.findChildren(DispositivoWidget):
-            if widget.name == name:
-                print(f"Updating device '{name}' with selected items: {selected_items}")
-                widget.objToFind = selected_items
+            if widget.device == device:
+                print(f"Updating device '{device}' with selected items: {selected_items}")
+                self.dispositivos_dict[widget].objToFind = selected_items
+                self.dispositivos_dict[widget].name = name
                 return
 
         print(f"Adding new device '{name}' with selected items: {selected_items}")
@@ -625,9 +626,19 @@ class ConfigurarDispositivo(QDialog):
         self.ip_line_edit.hide()
         self.testButton.hide()
         self.label_procura_dispositivo.hide()
-
+        if device != "":
+            self.nomeLineEdit.setText(name)
+            if str(device)[:4] == "http" or device == "rtsp":
+                self.checkBox_IP.setChecked(True)
+                self.ip_line_edit.setText(device)
+                self.ip_line_edit.setEnabled(False)
+            else:
+                self.device_combo_box.setCurrentIndex(self.device_combo_box.findData(int(device)))
+                self.device_combo_box.setEnabled(False)
+            self.checkBox_IP.setEnabled(False)
+            self.atualizar_dispositivos_button.setEnabled(False)
+            self.testButton.setEnabled(False)
         self.setLayout(layout)
-
 
     def filter_list(self):
         search_text = self.search_bar.text().lower()
