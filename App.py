@@ -270,9 +270,15 @@ class DispositivoWidget(QWidget):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
-        config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind)
-        config_dialog.exec_()
+        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind)
+        self.config_dialog.done_clicked.connect(self.handle_done_clicked)
+        self.config_dialog.exec_()
 
+    def handle_done_clicked(self, name, device, selected_items):
+        print(f"Updating device '{device}' with selected items: {selected_items}")
+        self.name = name
+        self.label.setText(name)
+        self.objToFind = selected_items
 
     def update_image(self, frame):
         height, width, channel = frame.shape
@@ -429,7 +435,6 @@ class DispositivosWindow(QWidget):
                     self.timer.stop()
                 for device, frame in frames.items():
                     self.dispositivos_dict[device].update_image(frame)
-                    print("frame",type(frame))
             except self.queue.empty:
                 print("Queue is empty.")
             time.sleep(0.5)
@@ -440,28 +445,15 @@ class DispositivosWindow(QWidget):
         image_window.show()
 
     def open_device_ip_window(self):
-        device_ip_window = ConfigurarDispositivo()
-        device_ip_window.done_clicked.connect(self.handle_done_clicked)  # Connect Done signal to slot
-        device_ip_window.exec_()
+        self.device_ip_window = ConfigurarDispositivo()
+        self.device_ip_window.done_clicked.connect(self.handle_done_clicked)
+        self.device_ip_window.exec_()
 
     def handle_done_clicked(self, name, device, selected_items):
-        for widget in self.findChildren(DispositivoWidget):
-            if widget.device == device:
-                print(f"Updating device '{device}' with selected items: {selected_items}")
-                self.dispositivos_dict[widget].objToFind = selected_items
-                self.dispositivos_dict[widget].name = name
-                return
-
         print(f"Adding new device '{name}' with selected items: {selected_items}")
         if device.isdigit():
             device = int(device)
         self.add_dispositivo(name, device, selected_items)
-
-    def open_device_config_dialog(self, name, device, objToFind):
-        device_config_dialog = ConfigurarDispositivo(name, device, objToFind)
-        device_config_dialog.done_clicked.connect(self.handle_done_clicked)
-        device_config_dialog.exec_()
-
 
 class AlertasWindow(QWidget):
     def __init__(self):
@@ -491,6 +483,8 @@ class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
 
     def __init__(self, name="", device="", objToFind=None):
+        if objToFind is None:
+            objToFind = []
         super().__init__()
         self.setStyleSheet("""
                        ConfigurarDispositivo {
@@ -547,8 +541,8 @@ class ConfigurarDispositivo(QDialog):
                             color: #000000;
                         }
                    """)
-        self.class_names = yoloScript.get_classes()
-        self.class_names_selected = []
+        self.class_names = list(set(yoloScript.get_classes()).difference(objToFind))
+        self.class_names_selected = objToFind
         self.setWindowTitle("Configurar Dispositivo")
         layout = QVBoxLayout()
         self.nomeLabel = QLabel("Insira o nome:")
@@ -585,10 +579,10 @@ class ConfigurarDispositivo(QDialog):
         self.search_bar_selected.textChanged.connect(self.filter_list_selected)
         self.availableObjects = QListWidget()
         self.availableObjects.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.selectedObects = QListWidget()
         self.availableObjects.addItems(sorted(self.class_names))
         self.objectsSelected = QListWidget()
         self.objectsSelected.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.objectsSelected.addItems(sorted(self.class_names_selected))
         self.buttonRemove = DarkButton("Remove (-)")
         self.buttonAdd = DarkButton("Add (+)")
         self.buttonAdd.clicked.connect(self.buttonAddf)
@@ -652,8 +646,8 @@ class ConfigurarDispositivo(QDialog):
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly) == []:
                 self.objectsSelected.addItem(item.text())
                 self.availableObjects.takeItem(self.availableObjects.row(item))
-                self.class_names.remove(item.text())
-                self.class_names_selected.append(item.text())
+                #self.class_names.remove(item.text())
+                #self.class_names_selected.append(item.text())
         self.repaint()
 
     def buttonRemovef(self):
@@ -662,8 +656,8 @@ class ConfigurarDispositivo(QDialog):
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
                 self.objectsSelected.takeItem(self.objectsSelected.row(item))
                 self.availableObjects.addItem(item.text())
-                self.class_names.append(item.text())
-                self.class_names_selected.remove(item.text())
+                #self.class_names.append(item.text())
+                #self.class_names_selected.remove(item.text())
         self.availableObjects.sortItems()
         self.repaint()
 
@@ -680,9 +674,9 @@ class ConfigurarDispositivo(QDialog):
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
             device = str(device)
-        selected_items = self.class_names_selected
-        self.done_clicked.emit(name, device, selected_items)  # Emit signal with device name and selected items
-        self.accept()  # fechar janela
+        selected_items = [self.objectsSelected.item(i).text() for i in range(self.objectsSelected.count())]
+        self.done_clicked.emit(name, device, selected_items)
+        self.accept()
 
     def atualizar_dispositivos(self):
         Thread(target=self.listar_Thread).start()
