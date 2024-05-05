@@ -21,7 +21,7 @@ class SplashScreen(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.counter = 0
-        self.n = 300  # total instance
+        self.n = 50
 
         self.initUI()
 
@@ -893,27 +893,28 @@ if __name__ == '__main__':
     window.setStyleSheet('''
                #LabelTitle {
                    font-size: 60px;
-                   color: #93deed;
+                   color: #ffffff;
                }
 
                #LabelDesc {
                    font-size: 30px;
-                   color: #c2ced1;
+                   color: #ffffff;
                }
 
                #LabelLoading {
                    font-size: 30px;
-                   color: #e8e8eb;
+                   color: #ffffff;
                }
 
                QFrame {
-                   background-color: #2F4454;
-                   color: rgb(220, 220, 220);
+                   background-color: #292929;
+                   color: #fffff;
+                   border-radius: 10px;
                }
 
                QProgressBar {
-                   background-color: #DA7B93;
-                   color: rgb(200, 200, 200);
+                   background-color: #ffffff;
+                   color: #000000;
                    border-style: none;
                    border-radius: 10px;
                    text-align: center;
@@ -922,7 +923,7 @@ if __name__ == '__main__':
 
                QProgressBar::chunk {
                    border-radius: 10px;
-                   background-color: qlineargradient(spread:pad x1:0, x2:1, y1:0.511364, y2:0.523, stop:0 #1C3334, stop:1 #376E6F);
+                   background-color: #D9D9D9;
                }
            ''')
     window.show()
