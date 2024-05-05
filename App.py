@@ -4,11 +4,11 @@ from threading import Thread
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import Qt, QTimer, QSize, QRect
+from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
-    QSizePolicy, QScrollBar, QAbstractItemView
+    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout
 from PyQt5 import QtCore
 import yoloScript
 
@@ -352,7 +352,17 @@ class DispositivosWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dispositivos")
-        layout = QVBoxLayout(self)
+
+        self.stacked_widget = QStackedWidget()
+        self.mosaico_layout = QWidget()
+        self.horizontal_layout = QWidget()
+        self.current_page_index = 1
+
+        self.stacked_widget.addWidget(self.mosaico_layout)
+        self.stacked_widget.addWidget(self.horizontal_layout)
+
+        layout = QVBoxLayout()
+
         self.queue = Queue()
         self.dispositivos_dict = {}
 
@@ -381,19 +391,74 @@ class DispositivosWindow(QWidget):
 
         buttons_layout.setContentsMargins(0, 40, 0, 0)
 
-        layout.addLayout(buttons_layout)
+        top_layout = QVBoxLayout()
+        top_layout.addLayout(buttons_layout)
 
+        self.widgets_para_mosaico = []
+
+        layout.addLayout(top_layout)
+        layout.addWidget(self.stacked_widget)
+        self.setLayout(layout)
         self.reading = False
 
-        # Horizontal layout to list dispositivos adicionados
+        self.layout_mosaico()
+        self.layout_horizontal()
+
+    def layout_mosaico(self):
+        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
+        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+        self.stacked_widget.setCurrentIndex(0)
+
+        # Limpa o layout atual
+        layout = self.mosaico_layout.layout()
+        if layout:
+            for i in reversed(range(layout.count())):
+                layout.itemAt(i).widget().setParent(None)
+
+        # Cria uma área de rolagem para o layout mosaico
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        # Cria um widget para conter o layout mosaico
+        scroll_widget = QWidget()
+
+        grid_layout = QGridLayout(scroll_widget)
+
+        # Adiciona os widgets ao layout de grade mosaico
+        row = 0
+        col = 0
+        for widget in self.widgets_para_mosaico:
+            grid_layout.addWidget(widget, row, col)
+            col += 1
+            if col >= 3:  # Número máximo de colunas
+                col = 0
+                row += 1
+
+        # Ajusta o espaçamento entre os widgets
+        grid_layout.setHorizontalSpacing(10)
+        grid_layout.setVerticalSpacing(10)
+
+        # Define o widget com layout mosaico como widget da área de rolagem
+        scroll_area.setWidget(scroll_widget)
+
+        # Define a área de rolagem como widget do layout principal
+        layout_principal = QVBoxLayout(self.mosaico_layout)
+        layout_principal.addWidget(scroll_area)
+
+    def layout_horizontal(self):
+        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
+        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+        self.stacked_widget.setCurrentIndex(1)
+
+        layout_horizontal = QVBoxLayout(self.horizontal_layout)
         dispositivos_layout = QHBoxLayout()
         self.scroll_area = QScrollArea()
         self.scroll_area.setStyleSheet("""
-                    QScrollArea {
-                        background-color: #FFFFFF; /* Set background color to white */
-                        border-radius: 10px; /* Set border radius to 10px for rounded corners */
-                    }
-                """)
+                           QScrollArea {
+                               background-color: #FFFFFF; /* Set background color to white */
+                               border-radius: 10px; /* Set border radius to 10px for rounded corners */
+                           }
+                       """)
         self.scroll_area.setVerticalScrollBar(StyledScrollBar())
 
         self.scroll_area.setWidgetResizable(True)
@@ -404,21 +469,14 @@ class DispositivosWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)
         dispositivos_layout.addWidget(self.scroll_area)
         dispositivos_layout.setContentsMargins(0, 0, 0, 0)
-        layout.addLayout(dispositivos_layout)
-        self.layout_horizontal()
+        layout_horizontal.addLayout(dispositivos_layout)
 
-    def layout_mosaico(self):
-        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
-        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-
-    def layout_horizontal(self):
-        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
-        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
     def add_dispositivo(self, name, device, objToFind):
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
         dispositivo_widget.image_clicked.connect(self.show_image_window)  # Connect signal to slot
-        self.dispositivos_layout.addWidget(dispositivo_widget)
+        self.mosaico_layout.layout().addWidget(dispositivo_widget)
+        self.horizontal_layout.layout().addWidget(dispositivo_widget)
         Thread(target=self.runscript_thread, args=(device, objToFind)).start()
         if not self.reading:
             Thread(target=self.readQueue).start()
@@ -478,6 +536,12 @@ class ImageWindow(QMainWindow):
 
 global_devices = []
 
+class ListarThread(QThread):
+    finished = pyqtSignal(list)
+    global global_devices
+    def run(self):
+        global_devices = yoloScript.list_available_cameras()
+        self.finished.emit(global_devices)
 
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
@@ -541,10 +605,33 @@ class ConfigurarDispositivo(QDialog):
                             color: #000000;
                         }
                    """)
+
         self.class_names = list(set(yoloScript.get_classes()).difference(objToFind))
         self.class_names_selected = objToFind
         self.setWindowTitle("Configurar Dispositivo")
+        self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
+
+        self.stacked_widget = QStackedWidget()
+        self.page1 = QWidget()
+        self.page2 = QWidget()
+        self.current_page_index = 0
+
+        # Configuração das duas páginas
+        self.setup_page1(device, name)
+        self.setup_page2()
+
+        # Adicionando as páginas ao QStackedWidget
+        self.stacked_widget.addWidget(self.page1)
+        self.stacked_widget.addWidget(self.page2)
+
+        # Layout principal
         layout = QVBoxLayout()
+        layout.addWidget(self.stacked_widget)
+        self.setLayout(layout)
+
+    def setup_page1(self, device, name):
+        layout = QVBoxLayout(self.page1)
+        self.setWindowTitle("Configurar Dispositivo")
         self.nomeLabel = QLabel("Insira o nome:")
         self.nomeLineEdit = QLineEdit()
         self.dispositivo_label = QLabel("Escolha o dispositivo:")
@@ -567,10 +654,15 @@ class ConfigurarDispositivo(QDialog):
         self.layout_selected = QVBoxLayout()
         self.layout_availave = QVBoxLayout()
 
+        self.button_next = LightButton("")
+        self.button_next.setIcon(QIcon("icons/arrow_right.png"))
+        self.button_next.setIconSize(QSize(50, 50))
+        self.button_next.setFixedSize(50, 50)
+        self.button_next.clicked.connect(self.next_page)
+
         # List widget for selecting objects to detect
         self.procurar_objetos_label = QLabel("Selecionar objetos a detetar")
         self.objetosLabeb = QLabel("Objetos disponíveis")
-        self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
         self.search_bar = QLineEdit()
         self.search_bar_selected = QLineEdit()
         self.search_bar.setPlaceholderText("Search...")
@@ -612,8 +704,16 @@ class ConfigurarDispositivo(QDialog):
         layout.addWidget(self.ipLabeb)
         layout.addWidget(self.ip_line_edit)
         layout.addWidget(self.testButton)
-        layout.addWidget(self.checkBox_IP)
-        layout.addWidget(self.procurar_objetos_label, alignment=Qt.AlignCenter)
+        layout_horizontal = QHBoxLayout()
+        layout_vertical = QVBoxLayout()
+        layout_vertical.addWidget(self.checkBox_IP)
+        spacer_widget = QWidget()
+        spacer_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layout_vertical.addWidget(spacer_widget)
+        layout_vertical.addWidget(self.procurar_objetos_label, alignment=Qt.AlignCenter)
+        layout_horizontal.addLayout(layout_vertical)
+        layout_horizontal.addWidget(self.button_next, alignment=Qt.AlignRight)
+        layout.addLayout(layout_horizontal)
         layout.addLayout(self.layout_objetos)
         layout.addWidget(self.doneButton)
         self.ipLabeb.hide()
@@ -632,7 +732,19 @@ class ConfigurarDispositivo(QDialog):
             self.checkBox_IP.setEnabled(False)
             self.atualizar_dispositivos_button.setEnabled(False)
             self.testButton.setEnabled(False)
-        self.setLayout(layout)
+
+    def setup_page2(self):
+        layout = QVBoxLayout(self.page2)
+        self.setWindowTitle("Emitir alerta")
+
+    def next_page(self):
+        self.current_page_index = 1
+        self.stacked_widget.setCurrentIndex(self.current_page_index)
+
+    def previous_page(self):
+        self.current_page_index = 0
+        self.stacked_widget.setCurrentIndex(self.current_page_index)
+
 
     def filter_list(self):
         search_text = self.search_bar.text().lower()
@@ -679,19 +791,16 @@ class ConfigurarDispositivo(QDialog):
         self.accept()
 
     def atualizar_dispositivos(self):
-        Thread(target=self.listar_Thread).start()
-
-    def listar_Thread(self):
-        global global_devices
+        listar_thread = ListarThread(self)
+        listar_thread.finished.connect(self.listar_dispositivos)
+        listar_thread.start()
         self.device_combo_box.clear()
         self.label_procura_dispositivo.show()
         self.atualizar_dispositivos_button.setEnabled(False)
-        global_devices = yoloScript.list_available_cameras()
-        self.listar_dispositivos(global_devices)
-        self.label_procura_dispositivo.hide()
-        self.atualizar_dispositivos_button.setEnabled(True)
 
     def listar_dispositivos(self, devices):
+        self.label_procura_dispositivo.hide()
+        self.atualizar_dispositivos_button.setEnabled(True)
         if len(devices) > 0:
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
