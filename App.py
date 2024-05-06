@@ -12,6 +12,42 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt5 import QtCore
 import yoloScript
 
+
+class HorizontalLayout(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QHBoxLayout(self)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setStyleSheet("""
+                                   QScrollArea {
+                                       background-color: #FFFFFF; /* Set background color to white */
+                                       border-radius: 10px; /* Set border radius to 10px for rounded corners */
+                                   }
+                               """)
+        self.scroll_area.setVerticalScrollBar(StyledScrollBar())
+
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("background-color: transparent;")
+        self.scroll_widget = QWidget()
+        self.dispositivos_layout = QHBoxLayout(self.scroll_widget)
+        self.scroll_area.setWidget(self.scroll_widget)
+        self.layout.addWidget(self.scroll_area)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def addWidget(self, widget):
+        self.dispositivos_layout.addWidget(widget)
+
+
+class MosaicoLayout(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QGridLayout(self)
+        self.num_devices = 0
+    def addWidget(self, widget):
+        self.layout.addWidget(widget, self.num_devices % 3, self.num_devices // 3)
+        self.num_devices += 1
+
+
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
@@ -352,15 +388,11 @@ class DispositivosWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Dispositivos")
-
-        self.stacked_widget = QStackedWidget()
-        self.mosaico_layout = QWidget()
-        self.horizontal_layout = QWidget()
-        self.current_page_index = 1
-
-        self.stacked_widget.addWidget(self.mosaico_layout)
-        self.stacked_widget.addWidget(self.horizontal_layout)
-
+        self.stacked_layout = QStackedLayout()
+        self.horizontal_layout = HorizontalLayout()
+        self.mosaico_layout = MosaicoLayout()
+        self.stacked_layout.addWidget(self.horizontal_layout)
+        self.stacked_layout.addWidget(self.mosaico_layout)
         layout = QVBoxLayout()
 
         self.queue = Queue()
@@ -395,94 +427,36 @@ class DispositivosWindow(QWidget):
         top_layout.addLayout(buttons_layout)
 
         layout.addLayout(top_layout)
-        layout.addWidget(self.stacked_widget)
+
+        self.stacked_layout.setCurrentIndex(0)
+        layout.addLayout(self.stacked_layout)
         self.setLayout(layout)
+
         self.reading = False
-
-        self.layout_mosaico()
-        self.layout_horizontal()
-
+        self.horizontalbutton.setEnabled(False)
+        self.mosaicoButton.setEnabled(True)
+        self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
+        self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
     def layout_mosaico(self):
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-        self.stacked_widget.setCurrentIndex(0)
-
-        # Limpa o layout atual
-        layout = self.mosaico_layout.layout()
-        if layout:
-            for i in reversed(range(layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-
-        # Cria uma área de rolagem para o layout mosaico
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-
-        # Cria um widget para conter o layout mosaico
-        scroll_widget = QWidget()
-
-        grid_layout = QGridLayout(scroll_widget)
-
-        # Adiciona os widgets ao layout de grade mosaico
-        row = 0
-        col = 0
-        for widget in self.dispositivos_dict.values():
-            grid_layout.addWidget(widget, row, col)
-            col += 1
-            if col >= 3:  # Número máximo de colunas
-                col = 0
-                row += 1
-
-        # Ajusta o espaçamento entre os widgets
-        grid_layout.setHorizontalSpacing(10)
-        grid_layout.setVerticalSpacing(10)
-
-        # Define o widget com layout mosaico como widget da área de rolagem
-        scroll_area.setWidget(scroll_widget)
-
-        # Define a área de rolagem como widget do layout principal
-        layout_principal = QVBoxLayout(self.mosaico_layout)
-        layout_principal.addWidget(scroll_area)
+        self.horizontalbutton.setEnabled(True)
+        self.mosaicoButton.setEnabled(False)
+        self.stacked_layout.setCurrentIndex(1)
 
     def layout_horizontal(self):
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-        self.stacked_widget.setCurrentIndex(1)
-
-        # Limpa o layout atual
-        layout = self.horizontal_layout.layout()
-        if layout:
-            for i in reversed(range(layout.count())):
-                layout.itemAt(i).widget().setParent(None)
-
-        layout_horizontal = QVBoxLayout(self.horizontal_layout)
-        dispositivos_layout = QHBoxLayout()
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setStyleSheet("""
-                           QScrollArea {
-                               background-color: #FFFFFF; /* Set background color to white */
-                               border-radius: 10px; /* Set border radius to 10px for rounded corners */
-                           }
-                       """)
-        self.scroll_area.setVerticalScrollBar(StyledScrollBar())
-
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setStyleSheet("background-color: transparent;")
-        self.scroll_widget = QWidget()
-        self.dispositivos_layout = QHBoxLayout(self.scroll_widget)
-        self.dispositivos_layout.setAlignment(Qt.AlignLeft)
-        self.scroll_area.setWidget(self.scroll_widget)
-        dispositivos_layout.addWidget(self.scroll_area)
-        dispositivos_layout.setContentsMargins(0, 0, 0, 0)
-        for widget in self.dispositivos_dict.values():
-            self.dispositivos_layout.addWidget(widget)
-        layout_horizontal.addLayout(dispositivos_layout)
+        self.horizontalbutton.setEnabled(False)
+        self.mosaicoButton.setEnabled(True)
+        self.stacked_layout.setCurrentIndex(0)
 
     def add_dispositivo(self, name, device, objToFind):
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
         self.dispositivos_dict[device] = dispositivo_widget
-        dispositivo_widget.image_clicked.connect(self.show_image_window)  # Connect signal to slot
-        self.mosaico_layout.layout().addWidget(dispositivo_widget)
-        self.horizontal_layout.layout().addWidget(dispositivo_widget)
+        dispositivo_widget.image_clicked.connect(self.show_image_window)
+        self.mosaico_layout.addWidget(dispositivo_widget)
+        self.horizontal_layout.addWidget(dispositivo_widget)
         Thread(target=self.runscript_thread, args=(device, objToFind)).start()
         if not self.reading:
             Thread(target=self.readQueue).start()
