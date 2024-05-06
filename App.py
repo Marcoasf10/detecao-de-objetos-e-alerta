@@ -394,8 +394,6 @@ class DispositivosWindow(QWidget):
         top_layout = QVBoxLayout()
         top_layout.addLayout(buttons_layout)
 
-        self.widgets_para_mosaico = []
-
         layout.addLayout(top_layout)
         layout.addWidget(self.stacked_widget)
         self.setLayout(layout)
@@ -427,7 +425,7 @@ class DispositivosWindow(QWidget):
         # Adiciona os widgets ao layout de grade mosaico
         row = 0
         col = 0
-        for widget in self.widgets_para_mosaico:
+        for widget in self.dispositivos_dict.values():
             grid_layout.addWidget(widget, row, col)
             col += 1
             if col >= 3:  # Número máximo de colunas
@@ -450,6 +448,12 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.stacked_widget.setCurrentIndex(1)
 
+        # Limpa o layout atual
+        layout = self.horizontal_layout.layout()
+        if layout:
+            for i in reversed(range(layout.count())):
+                layout.itemAt(i).widget().setParent(None)
+
         layout_horizontal = QVBoxLayout(self.horizontal_layout)
         dispositivos_layout = QHBoxLayout()
         self.scroll_area = QScrollArea()
@@ -469,6 +473,8 @@ class DispositivosWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)
         dispositivos_layout.addWidget(self.scroll_area)
         dispositivos_layout.setContentsMargins(0, 0, 0, 0)
+        for widget in self.dispositivos_dict.values():
+            self.dispositivos_layout.addWidget(widget)
         layout_horizontal.addLayout(dispositivos_layout)
 
     def add_dispositivo(self, name, device, objToFind):
@@ -538,8 +544,8 @@ global_devices = []
 
 class ListarThread(QThread):
     finished = pyqtSignal(list)
-    global global_devices
     def run(self):
+        global global_devices
         global_devices = yoloScript.list_available_cameras()
         self.finished.emit(global_devices)
 
@@ -722,6 +728,7 @@ class ConfigurarDispositivo(QDialog):
         self.label_procura_dispositivo.hide()
         if device != "":
             self.nomeLineEdit.setText(name)
+            print("device", device)
             if str(device)[:4] == "http" or device == "rtsp":
                 self.checkBox_IP.setChecked(True)
                 self.ip_line_edit.setText(device)
@@ -735,7 +742,18 @@ class ConfigurarDispositivo(QDialog):
 
     def setup_page2(self):
         layout = QVBoxLayout(self.page2)
-        self.setWindowTitle("Emitir alerta")
+        layout.addWidget(QLabel("Objetos selecionados"))
+        self.button_prev = LightButton("")
+        self.button_prev.setIcon(QIcon("icons/arrow_left.png"))
+        self.button_prev.setIconSize(QSize(50, 50))
+        self.button_prev.setFixedSize(50, 50)
+        self.button_prev.clicked.connect(self.previous_page)
+        self.objetos_alerta = QListWidget()
+        for index in range(self.objectsSelected.count()):
+            item = self.objectsSelected.item(index)
+            self.objetos_alerta.addItem(item.text())
+        layout.addWidget(self.objetos_alerta)
+        layout.addWidget(self.button_prev)
 
     def next_page(self):
         self.current_page_index = 1
@@ -757,6 +775,7 @@ class ConfigurarDispositivo(QDialog):
         for item in selected_items:
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly) == []:
                 self.objectsSelected.addItem(item.text())
+                self.objetos_alerta.addItem(item.text())
                 self.availableObjects.takeItem(self.availableObjects.row(item))
                 #self.class_names.remove(item.text())
                 #self.class_names_selected.append(item.text())
@@ -767,9 +786,8 @@ class ConfigurarDispositivo(QDialog):
         for item in selected_items:
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
                 self.objectsSelected.takeItem(self.objectsSelected.row(item))
+                self.objetos_alerta.takeItem(self.objetos_alerta.row(item))
                 self.availableObjects.addItem(item.text())
-                #self.class_names.append(item.text())
-                #self.class_names_selected.remove(item.text())
         self.availableObjects.sortItems()
         self.repaint()
 
@@ -799,8 +817,6 @@ class ConfigurarDispositivo(QDialog):
         self.atualizar_dispositivos_button.setEnabled(False)
 
     def listar_dispositivos(self, devices):
-        self.label_procura_dispositivo.hide()
-        self.atualizar_dispositivos_button.setEnabled(True)
         if len(devices) > 0:
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
