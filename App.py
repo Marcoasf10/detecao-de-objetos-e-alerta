@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt5 import QtCore
 import yoloScript
 
-
+all_dispositivos_widget = []
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
@@ -24,7 +24,6 @@ class HorizontalLayout(QWidget):
                                        border-radius: 10px; /* Set border radius to 10px for rounded corners */
                                    }
                                """)
-        self.scroll_area.setVerticalScrollBar(StyledScrollBar())
 
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setStyleSheet("background-color: transparent;")
@@ -37,6 +36,9 @@ class HorizontalLayout(QWidget):
     def addWidget(self, widget):
         self.dispositivos_layout.addWidget(widget)
 
+    def removeWidget(self, widget):
+        self.dispositivos_layout.removeWidget(widget)
+
 
 class MosaicoLayout(QWidget):
     def __init__(self):
@@ -44,8 +46,15 @@ class MosaicoLayout(QWidget):
         self.layout = QGridLayout(self)
         self.num_devices = 0
     def addWidget(self, widget):
-        self.layout.addWidget(widget, self.num_devices % 3, self.num_devices // 3)
+        row = self.num_devices // 3
+        col = self.num_devices % 3
+        self.layout.addWidget(widget, row, col)
         self.num_devices += 1
+
+    def removeWidget(self, widget):
+        self.layout.removeWidget(widget)
+        if self.num_devices > 0:
+            self.num_devices -= 1
 
 
 class SplashScreen(QWidget):
@@ -438,11 +447,16 @@ class DispositivosWindow(QWidget):
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
     def layout_mosaico(self):
+        global all_dispositivos_widget
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.horizontalbutton.setEnabled(True)
         self.mosaicoButton.setEnabled(False)
         self.stacked_layout.setCurrentIndex(1)
+        for widget in all_dispositivos_widget:
+            self.horizontal_layout.removeWidget(widget)
+            self.mosaico_layout.addWidget(widget)
+
 
     def layout_horizontal(self):
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -450,13 +464,20 @@ class DispositivosWindow(QWidget):
         self.horizontalbutton.setEnabled(False)
         self.mosaicoButton.setEnabled(True)
         self.stacked_layout.setCurrentIndex(0)
+        for widget in all_dispositivos_widget:
+            self.mosaico_layout.removeWidget(widget)
+            self.horizontal_layout.addWidget(widget)
 
     def add_dispositivo(self, name, device, objToFind):
+        global all_dispositivos_widget
         dispositivo_widget = DispositivoWidget(name, device, objToFind)
+        all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
         dispositivo_widget.image_clicked.connect(self.show_image_window)
-        self.mosaico_layout.addWidget(dispositivo_widget)
-        self.horizontal_layout.addWidget(dispositivo_widget)
+        if self.stacked_layout.currentIndex() == 1:
+            self.mosaico_layout.addWidget(dispositivo_widget)
+        if self.stacked_layout.currentIndex() == 0:
+            self.horizontal_layout.addWidget(dispositivo_widget)
         Thread(target=self.runscript_thread, args=(device, objToFind)).start()
         if not self.reading:
             Thread(target=self.readQueue).start()
