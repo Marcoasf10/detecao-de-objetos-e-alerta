@@ -804,17 +804,12 @@ class ConfigurarDispositivo(QDialog):
         self.accept()
 
     def atualizar_dispositivos(self):
-        Thread(target=self.listar_Thread).start()
-
-    def listar_Thread(self):
-        global global_devices
+        listar_thread = ListarThread(self)
+        listar_thread.finished.connect(self.listar_dispositivos)
+        listar_thread.start()
         self.device_combo_box.clear()
         self.label_procura_dispositivo.show()
         self.atualizar_dispositivos_button.setEnabled(False)
-        global_devices = yoloScript.list_available_cameras()
-        self.listar_dispositivos(global_devices)
-        self.label_procura_dispositivo.hide()
-        self.atualizar_dispositivos_button.setEnabled(True)
 
     def listar_dispositivos(self, devices):
         if len(devices) > 0:
