@@ -347,8 +347,14 @@ class DispositivoWidget(QWidget):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
-        '''image_stopped = self.sobrepor_icon_centralizado(self.image_label.pixmap().toImage(), self.iconPause)
-        self.update_image(image_stopped)'''
+        image_stopped = self.sobrepor_icon_centralizado(self.image_label.pixmap().toImage(), self.iconPause)
+        image_format = QImage.Format_ARGB32
+        converted_image = image_stopped.convertToFormat(image_format)
+        buffer = converted_image.bits()
+        buffer.setsize(converted_image.byteCount())
+        image_np = np.array(buffer).reshape(converted_image.height(), converted_image.width(), 4)
+
+        self.update_image(image_np)
         yoloScript.change_stop(self.device, True)
 
     def live_button_clicked(self):
