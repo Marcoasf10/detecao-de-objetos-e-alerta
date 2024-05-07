@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
-    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout
+    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox
 from PyQt5 import QtCore
 import yoloScript
 
@@ -512,6 +512,9 @@ class DispositivosWindow(QWidget):
         self.device_ip_window.exec_()
 
     def handle_done_clicked(self, name, device, selected_items):
+        if device in self.dispositivos_dict.keys():
+            QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
+            return
         print(f"Adding new device '{name}' with selected items: {selected_items}")
         if device.isdigit():
             device = int(device)
@@ -607,6 +610,18 @@ class ConfigurarDispositivo(QDialog):
                         QListView::item:selected{
                             background-color: #D9D9D9;
                             color: #000000;
+                        }
+                        QMessageBox {
+                             background-color: #5B5B5B;
+                             color: #000000;
+                        }
+                        QMessageBox QPushButton {
+                            border: none;
+                            border-radius: 10px;
+                            font-size: 16px;
+                            padding: 10px;
+                            color: #FFFFFF;
+                            background-color: #292929;
                         }
                    """)
 
@@ -768,6 +783,12 @@ class ConfigurarDispositivo(QDialog):
         filtered_items = [item for item in self.class_names if search_text in item.lower()]
         self.availableObjects.addItems(sorted(filtered_items))
 
+    def filter_list_selected(self):
+        search_text = self.search_bar_selected.text().lower()
+        self.objectsSelected.clear()
+        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
+        self.objectsSelected.addItems(sorted(filtered_items))
+
     def buttonAddf(self):
         selected_items = self.availableObjects.selectedItems()
         for item in selected_items:
@@ -789,12 +810,6 @@ class ConfigurarDispositivo(QDialog):
         self.availableObjects.sortItems()
         self.repaint()
 
-    def filter_list_selected(self):
-        search_text = self.search_bar_selected.text().lower()
-        self.objectsSelected.clear()
-        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
-        self.objectsSelected.addItems(sorted(filtered_items))
-
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
@@ -802,6 +817,10 @@ class ConfigurarDispositivo(QDialog):
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
             device = str(device)
+        print("device", device)
+        if device == "" or device == "None":
+            QMessageBox.warning(self, "Erro", "Selecione um dispositivo.")
+            return
         selected_items = [self.objectsSelected.item(i).text() for i in range(self.objectsSelected.count())]
         self.done_clicked.emit(name, device, selected_items)
         self.accept()
