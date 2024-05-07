@@ -34,6 +34,7 @@ class HorizontalLayout(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def addWidget(self, widget):
+        widget.setMaximumSize(400, 400)
         self.dispositivos_layout.addWidget(widget)
 
     def removeWidget(self, widget):
@@ -46,6 +47,7 @@ class MosaicoLayout(QWidget):
         self.layout = QGridLayout(self)
         self.num_devices = 0
     def addWidget(self, widget):
+        widget.setMaximumSize(400, 400)
         row = self.num_devices // 3
         col = self.num_devices % 3
         self.layout.addWidget(widget, row, col)
@@ -220,7 +222,7 @@ class DispositivoWidget(QWidget):
 
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
-        pixmap = pixmap.scaledToWidth(500)
+        pixmap = pixmap.scaledToWidth(325)
         self.image_label.setPixmap(pixmap)
         settings_layout = QVBoxLayout()
         settings_layout.addWidget(self.settings_button, alignment=Qt.AlignTop)
@@ -339,6 +341,7 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         yoloScript.change_stop(self.device, False)
+        self.change_delay(self.combo_delay.itemData(self.combo_delay.currentIndex()))
 
     def stop_button_clicked(self):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
@@ -538,11 +541,11 @@ class ImageWindow(QMainWindow):
 global_devices = []
 
 class ListarThread(QThread):
-    finished = pyqtSignal(list)
+    finished = pyqtSignal(list, bool)
     def run(self):
         global global_devices
         global_devices = yoloScript.list_available_cameras()
-        self.finished.emit(global_devices)
+        self.finished.emit(global_devices, True)
 
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
@@ -811,11 +814,14 @@ class ConfigurarDispositivo(QDialog):
         self.label_procura_dispositivo.show()
         self.atualizar_dispositivos_button.setEnabled(False)
 
-    def listar_dispositivos(self, devices):
+    def listar_dispositivos(self, devices, has_dispositivos=False):
         if len(devices) > 0:
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
             self.device_combo_box.setCurrentIndex(0)
+        if(has_dispositivos):
+            self.label_procura_dispositivo.hide()
+            self.atualizar_dispositivos_button.setEnabled(True)
 
     def toggle_visibility(self, state):
         if state == Qt.Checked:
