@@ -626,7 +626,7 @@ class ConfigurarDispositivo(QDialog):
                    """)
 
         self.class_names = list(set(yoloScript.get_classes()).difference(objToFind))
-        self.class_names_selected = objToFind
+        self.class_names_selected = objToFind[:]
         self.setWindowTitle("Configurar Dispositivo")
         self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
 
@@ -762,19 +762,18 @@ class ConfigurarDispositivo(QDialog):
         self.button_prev.setFixedSize(50, 50)
         self.button_prev.clicked.connect(self.previous_page)
         self.objetos_alerta = QListWidget()
-        for index in range(self.objectsSelected.count()):
-            item = self.objectsSelected.item(index)
-            self.objetos_alerta.addItem(item.text())
         layout.addWidget(self.objetos_alerta)
         layout.addWidget(self.button_prev)
 
     def next_page(self):
         self.current_page_index = 1
         self.stacked_widget.setCurrentIndex(self.current_page_index)
+        self.objetos_alerta.addItems(sorted(self.class_names_selected))
 
     def previous_page(self):
         self.current_page_index = 0
         self.stacked_widget.setCurrentIndex(self.current_page_index)
+        self.objetos_alerta.clear()
 
 
     def filter_list(self):
@@ -783,21 +782,14 @@ class ConfigurarDispositivo(QDialog):
         filtered_items = [item for item in self.class_names if search_text in item.lower()]
         self.availableObjects.addItems(sorted(filtered_items))
 
-    def filter_list_selected(self):
-        search_text = self.search_bar_selected.text().lower()
-        self.objectsSelected.clear()
-        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
-        self.objectsSelected.addItems(sorted(filtered_items))
-
     def buttonAddf(self):
         selected_items = self.availableObjects.selectedItems()
         for item in selected_items:
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly) == []:
                 self.objectsSelected.addItem(item.text())
-                self.objetos_alerta.addItem(item.text())
                 self.availableObjects.takeItem(self.availableObjects.row(item))
-                #self.class_names.remove(item.text())
-                #self.class_names_selected.append(item.text())
+                self.class_names.remove(item.text())
+                self.class_names_selected.append(item.text())
         self.repaint()
 
     def buttonRemovef(self):
@@ -805,10 +797,17 @@ class ConfigurarDispositivo(QDialog):
         for item in selected_items:
             if self.objectsSelected.findItems(item.text(), Qt.MatchExactly):
                 self.objectsSelected.takeItem(self.objectsSelected.row(item))
-                self.objetos_alerta.takeItem(self.objetos_alerta.row(item))
                 self.availableObjects.addItem(item.text())
+                self.class_names.append(item.text())
+                self.class_names_selected.remove(item.text())
         self.availableObjects.sortItems()
         self.repaint()
+
+    def filter_list_selected(self):
+        search_text = self.search_bar_selected.text().lower()
+        self.objectsSelected.clear()
+        filtered_items = [item for item in self.class_names_selected if search_text in item.lower()]
+        self.objectsSelected.addItems(sorted(filtered_items))
 
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
