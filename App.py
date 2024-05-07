@@ -507,7 +507,7 @@ class DispositivosWindow(QWidget):
         image_window.show()
 
     def open_device_ip_window(self):
-        self.device_ip_window = ConfigurarDispositivo()
+        self.device_ip_window = ConfigurarDispositivo(dispositivos_dict=self.dispositivos_dict)
         self.device_ip_window.done_clicked.connect(self.handle_done_clicked)
         self.device_ip_window.exec_()
 
@@ -553,7 +553,7 @@ class ListarThread(QThread):
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
 
-    def __init__(self, name="", device="", objToFind=None):
+    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}):
         if objToFind is None:
             objToFind = []
         super().__init__()
@@ -629,7 +629,7 @@ class ConfigurarDispositivo(QDialog):
         self.class_names_selected = objToFind
         self.setWindowTitle("Configurar Dispositivo")
         self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
-
+        self.dispositivo_dict = dispositivos_dict
         self.stacked_widget = QStackedWidget()
         self.page1 = QWidget()
         self.page2 = QWidget()
@@ -814,8 +814,14 @@ class ConfigurarDispositivo(QDialog):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
             device = self.ip_line_edit.text()
+            if device in self.dispositivo_dict.keys():
+                QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
+                return
         else:
             device = self.device_combo_box.itemData(self.device_combo_box.currentIndex())
+            if device in self.dispositivo_dict.keys():
+                QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
+                return
             device = str(device)
         print("device", device)
         if device == "" or device == "None":
