@@ -35,7 +35,7 @@ class HorizontalLayout(QWidget):
 
     def addWidget(self, widget):
         widget.setMaximumSize(400, 400)
-        self.dispositivos_layout.addWidget(widget)
+        self.dispositivos_layout.addWidget(widget, alignment=Qt.AlignLeft)
 
     def removeWidget(self, widget):
         self.dispositivos_layout.removeWidget(widget)
@@ -356,7 +356,7 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         yoloScript.change_stop(self.device, False)
-        yoloScript.change_delay(self.device, 0.2)
+        yoloScript.change_delay(self.device, 0)
 
     def populate_combo_delay(self):
         self.combo_delay.clear()
