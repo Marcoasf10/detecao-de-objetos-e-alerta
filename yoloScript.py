@@ -52,7 +52,7 @@ def predict(device, listObjToFind, queue, delay):
     last_frame = None
     error = 0
     stop = False
-    while cap.isOpened():
+    while True:
         with stop_lock:
             if device in stop_dict:
                 stop = stop_dict[device]

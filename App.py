@@ -212,7 +212,7 @@ class DispositivoWidget(QWidget):
 
         self.expand_button = WidgetButton()
         self.expand_button.setIcon(QIcon("icons/expand.png"))
-        self.expand_button.setIconSize(QSize(40, 40))
+        self.expand_button.setIconSize(QSize(35, 35))
         self.expand_button.setFixedSize(50, 50)
         self.expand_button.clicked.connect(self.expand_button_clicked)
 
@@ -239,18 +239,18 @@ class DispositivoWidget(QWidget):
         button_layout = QHBoxLayout()
         self.start_button = WidgetPressedButton()
         self.start_button.setIcon(QIcon("icons/play.png"))
-        self.start_button.setIconSize(QSize(40, 40))
+        self.start_button.setIconSize(QSize(30, 30))
         self.start_button.setFixedSize(50, 50)
         self.start_button.clicked.connect(self.start_button_clicked)
         self.stop_button = WidgetButton()
         self.stop_button.setIcon(QIcon("icons/pause.png"))
-        self.stop_button.setIconSize(QSize(40, 40))
+        self.stop_button.setIconSize(QSize(35, 35))
         self.stop_button.setFixedSize(50, 50)
         self.stop_button.clicked.connect(self.stop_button_clicked)
         self.live_button = WidgetButton()
         self.live_button.setIcon(QIcon("icons/live.png"))
         self.live_button.clicked.connect(self.live_button_clicked)
-        self.live_button.setIconSize(QSize(40, 40))
+        self.live_button.setIconSize(QSize(35, 35))
         self.live_button.setFixedSize(50, 50)
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
@@ -341,7 +341,7 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         yoloScript.change_stop(self.device, False)
-        self.change_delay(self.combo_delay.itemData(self.combo_delay.currentIndex()))
+        self.change_delay()
 
     def stop_button_clicked(self):
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
@@ -356,7 +356,7 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         yoloScript.change_stop(self.device, False)
-        yoloScript.change_delay(self.device, 0)
+        yoloScript.change_delay(self.device, 0.2)
 
     def populate_combo_delay(self):
         self.combo_delay.clear()
