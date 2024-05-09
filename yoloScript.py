@@ -123,6 +123,11 @@ def predict(device, listObjToFind, queue, delay):
                         print(f"ID: {int(id)} -> Mover")
         i += 1
         while time.time() - start_time <= delay:
+            with stop_lock:
+                if device in stop_dict:
+                    stop = stop_dict[device]
+                    if stop:
+                        break
             with delay_lock:
                 if device in delay_dict:
                     delay = delay_dict[device]
