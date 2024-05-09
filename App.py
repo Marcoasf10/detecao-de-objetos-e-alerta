@@ -8,9 +8,10 @@ from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
-    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox
+    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem
 from PyQt5 import QtCore
 import yoloScript
+import multiprocessing
 
 all_dispositivos_widget = []
 class HorizontalLayout(QWidget):
@@ -556,6 +557,64 @@ class ListarThread(QThread):
         global_devices = yoloScript.list_available_cameras()
         self.finished.emit(global_devices, True)
 
+
+class CustomWidget(QWidget):
+    def __init__(self, text):
+        super().__init__()
+
+        layout = QHBoxLayout()
+        self.label = QLabel(text)
+        self.combo_box = QComboBox()
+        self.combo_box.addItem("Opção 1")
+        self.combo_box.addItem("Opção 2")
+        self.combo_box.addItem("Opção 3")
+
+        self.combo_box_time = QComboBox()
+        self.combo_box_time.addItem("segundos")
+        self.combo_box_time.addItem("minutos")
+        self.combo_box_time.addItem("horas")
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.combo_box)
+        layout.addWidget(self.combo_box_time)
+        self.setLayout(layout)
+
+        self.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #000000;
+            }
+            QComboBox {
+                font-size: 14px;
+                background-color: #D9D9D9;
+                color: #000000;
+                border: none;
+                border-radius: 10px;
+                max-height: 20px;
+            }
+            QComboBox::drop-down {
+                border: 0px;
+                background-color: #D9D9D9;
+                margin-right: 10px;
+                min-height: 10px;
+            }
+            QComboBox::down-arrow {
+                image: url(icons/dropdown.png);
+                width: 11px;
+                height: 11px;
+            }
+            QComboBox::item {
+                background-color: #5B5B5B;
+                color: #FFFFFF;
+            }
+            QComboBox::item:!selected {
+                background-color: #D9D9D9;
+                color: #000000;
+            }
+        """)
+    
+
+
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
 
@@ -760,27 +819,47 @@ class ConfigurarDispositivo(QDialog):
             self.testButton.setEnabled(False)
 
     def setup_page2(self):
-        layout = QVBoxLayout(self.page2)
-        layout.addWidget(QLabel("Objetos selecionados"))
+        layout = QHBoxLayout(self.page2)
+        vertical_left_layout = QVBoxLayout()
+        self.vertical_right_layout = QVBoxLayout()
         self.button_prev = LightButton("")
         self.button_prev.setIcon(QIcon("icons/arrow_left.png"))
         self.button_prev.setIconSize(QSize(50, 50))
         self.button_prev.setFixedSize(50, 50)
         self.button_prev.clicked.connect(self.previous_page)
         self.objetos_alerta = QListWidget()
-        layout.addWidget(self.objetos_alerta)
-        layout.addWidget(self.button_prev)
+        self.objetos_alerta.setMinimumSize(300, 250)
+        vertical_left_layout.addWidget(self.button_prev)
+        layout.addLayout(vertical_left_layout)
+        middle_layout = QVBoxLayout()
+        label_alerta = QLabel("Emitir Alertas")
+        label_alerta.setStyleSheet("font-size: 30px;")
+        self.vertical_right_layout.addWidget(label_alerta, alignment=Qt.AlignTop | Qt.AlignHCenter)
+        #self.vertical_right_layout.addWidget(QLabel("Objetos selecionados"),  alignment=Qt.AlignCenter)
+        #self.vertical_right_layout.addWidget(self.objetos_alerta, alignment=Qt.AlignCenter)
+        middle_layout.addWidget(QLabel("Objetos selecionados"), alignment=Qt.AlignCenter)
+        middle_layout.addWidget(self.objetos_alerta, alignment=Qt.AlignCenter)
+        self.vertical_right_layout.addLayout(middle_layout)
+        label = QLabel("Nesta janela pode definir o tempo de inatividade para cada objeto antes que um alerta seja emitido.")
+        label.setWordWrap(True)
+        label.setAlignment(Qt.AlignCenter)
+        self.vertical_right_layout.addWidget(label, alignment=Qt.AlignBottom | Qt.AlignHCenter)
+        layout.addLayout(self.vertical_right_layout)
 
     def next_page(self):
         self.current_page_index = 1
         self.stacked_widget.setCurrentIndex(self.current_page_index)
-        self.objetos_alerta.addItems(sorted(self.class_names_selected))
+        for classe in sorted(self.class_names_selected):
+            custom_widget = CustomWidget(classe)
+            list_item = QListWidgetItem(self.objetos_alerta)
+            list_item.setSizeHint(custom_widget.sizeHint())
+            self.objetos_alerta.setItemWidget(list_item, custom_widget)
+        print(self.objetos_alerta.size())
 
     def previous_page(self):
         self.current_page_index = 0
         self.stacked_widget.setCurrentIndex(self.current_page_index)
         self.objetos_alerta.clear()
-
 
     def filter_list(self):
         search_text = self.search_bar.text().lower()
@@ -935,6 +1014,7 @@ class MainWindow(QWidget):
         self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     app = QApplication([])
     window = SplashScreen()
     window.setStyleSheet('''
