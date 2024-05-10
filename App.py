@@ -453,7 +453,7 @@ class DispositivosWindow(QWidget):
         self.stacked_layout.setCurrentIndex(0)
         layout.addLayout(self.stacked_layout)
         self.setLayout(layout)
-
+        self.image_window = None
         self.reading = False
         self.horizontalbutton.setEnabled(False)
         self.mosaicoButton.setEnabled(True)
@@ -507,14 +507,16 @@ class DispositivosWindow(QWidget):
                     self.timer.stop()
                 for device, frame in frames.items():
                     self.dispositivos_dict[device].update_image(frame)
+                    if self.image_window is not None:
+                        self.image_window.update_image(frame)
             except self.queue.empty:
                 print("Queue is empty.")
             time.sleep(0.5)
 
     def show_image_window(self, name, pixmap):
         print("Device Name:", name)  # Print the device name
-        image_window = ImageWindow(pixmap)
-        image_window.show()
+        self.image_window = ImageWindow(pixmap)
+        self.image_window.show()
 
     def open_device_ip_window(self):
         self.device_ip_window = ConfigurarDispositivo(dispositivos_dict=self.dispositivos_dict)
@@ -546,10 +548,18 @@ class ImageWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
-        image_label = QLabel()
-        image_label.setPixmap(pixmap)
-        layout.addWidget(image_label)
+        self.image_label = QLabel()
+        self.image_label.setPixmap(pixmap)
+        layout.addWidget(self.image_label, alignment=Qt.AlignCenter)
 
+    def update_image(self, frame):
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_img)
+        pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
+        self.image_label.setPixmap(pixmap)
 
 global_devices = []
 
