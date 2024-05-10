@@ -11,6 +11,8 @@ retrieved_frames = {}
 predicted_frames = {}
 stop_dict = {}
 delay_dict = {}
+obj_find_dict = {}
+obj_find_lock = Lock()
 stop_lock = Lock()
 retrived_frames_lock = Lock()
 predicted_frames_lock = Lock()
@@ -43,6 +45,7 @@ def predict(device, listObjToFind, queue, delay):
     global predicted_frames
     global stop_dict
     global delay_dict
+    global obj_find_dict
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -56,10 +59,6 @@ def predict(device, listObjToFind, queue, delay):
         with stop_lock:
             if device in stop_dict:
                 stop = stop_dict[device]
-
-        with delay_lock:
-            if device in delay_dict:
-                delay = delay_dict[device]
         if stop:
             if cap.isOpened():
                 cap.release()
@@ -68,6 +67,14 @@ def predict(device, listObjToFind, queue, delay):
         if not cap.isOpened():
             cap = cv2.VideoCapture(device)
         # dar tempo para câmara inicializar
+        with delay_lock:
+            if device in delay_dict:
+                delay = delay_dict[device]
+        with obj_find_lock:
+            if device in obj_find_dict:
+                listObjToFind = []
+                for classe in list(obj_find_dict[device]):
+                    listObjToFind.append(list(model.names.values()).index(classe))
         if last_frame is None:
             time.sleep(0.1)
         start_time = time.time()
@@ -170,5 +177,10 @@ def change_delay(device, delay):
 
 def get_classes():
     return list(model.names.values())
+
+def update_obj_to_find(device ,obj_to_find):
+    global obj_find_dict
+    obj_find_dict[device] = obj_to_find
+
 
 

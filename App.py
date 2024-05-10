@@ -327,6 +327,9 @@ class DispositivoWidget(QWidget):
         self.name = name
         self.label.setText(name)
         self.objToFind = selected_items
+        if device.isdigit():
+            deviceInt = int(device)
+        yoloScript.update_obj_to_find(deviceInt, self.objToFind)
 
     def update_image(self, frame):
         height, width, channel = frame.shape
