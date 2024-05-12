@@ -4,6 +4,7 @@ from threading import Thread, Lock
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import pickle
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -57,6 +58,9 @@ def predict(device, listObjToFind, queue, delay):
     last_frame = None
     error = 0
     stop = False
+    parado = 0
+    mover = 0
+    alerta_filename = 'alertas.bin'
     while True:
         with delete_devices_lock:
             if device in delete_devices:
@@ -102,7 +106,7 @@ def predict(device, listObjToFind, queue, delay):
         # if img not equal last img:
         if last_frame is None or (last_frame is not None and error > 0):
             results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
-                                        stream=False, persist=True, imgsz=1280)
+                                        stream=False, persist=True, imgsz=1280, conf=0.3)
             last_frame = frame
         with delete_devices_lock:
             if device in delete_devices:
@@ -131,9 +135,20 @@ def predict(device, listObjToFind, queue, delay):
                     if canto1Mapper[id][2] == -1 and canto2Mapper[id][2] == -1:
                         continue
                     if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
+                        mover = 0
                         print(f"ID: {int(id)} -> Parado")
+                        parado += 1
                     else:
+                        parado = 0
                         print(f"ID: {int(id)} -> Mover")
+                        mover += 1
+            if parado >= 10:
+                parado = 0
+                descricao = f'O objeto: {local_model.names[boxes.cls[f]]} está parado á 10 segundos'
+                alerta = Alerta(device, local_model.names[boxes.cls[f]], descricao, frame)
+                with open(alerta_filename, 'ab') as f:
+                    pickle.dump(alerta, f)
+
         i += 1
         while time.time() - start_time <= delay:
             with delete_devices_lock:
@@ -194,5 +209,24 @@ def update_obj_to_find(device ,obj_to_find):
 
 def remove_device(device):
     delete_devices.append(device)
+
+class Alerta:
+    def __init__(self, device, classe, descriçao, photo):
+        self.device = device
+        self.classe = classe
+        self.descricao = descriçao
+        self.photo = photo
+
+    def get_device(self):
+        return self.device
+
+    def get_classe(self):
+        return self.classe
+
+    def get_descricao(self):
+        return self.descricao
+
+    def get_photo(self):
+        return self.photo
 
 

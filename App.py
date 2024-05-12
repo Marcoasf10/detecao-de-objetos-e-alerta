@@ -12,9 +12,11 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
+import pickle
 
 all_dispositivos_widget = []
 global_devices = []
+
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
@@ -555,12 +557,58 @@ class DispositivosWindow(QWidget):
     def remove_device(self, device):
         del self.dispositivos_dict[device]
 
+
+class AlertaWidget(QWidget):
+    def __init__(self, device, classe, descricao, frame):
+        super().__init__()
+        self.item_layout = QHBoxLayout()
+
+        texto_esquerda = QLabel(descricao)
+        texto_esquerda.setStyleSheet("font-size: 16px; color: #FFFFFF")
+
+        self.item_layout.addWidget(texto_esquerda)
+
+        imagem_direita = QLabel()
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_img)
+        pixmap = pixmap.scaledToWidth(100)
+        imagem_direita.setPixmap(pixmap)
+        self.item_layout.addWidget(imagem_direita, alignment=Qt.AlignRight)
+        self.device = device
+        self.classe = classe
+        self.setLayout(self.item_layout)
+
 class AlertasWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Alertas")
-        layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("MainWindow for Alertas"))
+        self.setGeometry(100, 100, 600, 400)  # Definindo a geometria da janela
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.alertas_widgets = []
+
+    def carregar_alertas(self):
+        alertas = []
+        for widget in self.alertas_widgets:
+            self.layout.removeWidget(widget)
+            widget.deleteLater()
+        self.alertas_widgets = []
+        try:
+            with open("alertas.bin", 'rb') as file:
+                while True:
+                    alerta = pickle.load(file)
+                    alertas.append(alerta)
+        except EOFError:
+            pass
+        for alerta in alertas:
+            alerta_widget = AlertaWidget(alerta.get_device(), alerta.get_classe(), alerta.get_descricao(), alerta.get_photo())
+            self.alertas_widgets.append(alerta_widget)
+            self.layout.addWidget(alerta_widget)
+
+
 
 
 class ImageWindow(QMainWindow):
@@ -1043,6 +1091,7 @@ class MainWindow(QWidget):
         self.alertas_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-left-radius:20%; font-size: 20px; padding:10px 0")
 
     def show_alertas(self):
+        self.alertas_window.carregar_alertas()
         self.stacked_layout.setCurrentIndex(1)
         self.dispositivos_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
         self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
