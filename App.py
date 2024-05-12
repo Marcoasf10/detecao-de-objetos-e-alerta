@@ -196,6 +196,7 @@ class DispositivoWidget(QWidget):
 
     def __init__(self, name, device, objToFind):
         super().__init__()
+        self.pause = False
         self.name = name
         self.image_path = "frames/noCamera.jpg"  # Store the image path
         self.objToFind = objToFind
@@ -332,6 +333,8 @@ class DispositivoWidget(QWidget):
         yoloScript.update_obj_to_find(deviceInt, self.objToFind)
 
     def update_image(self, frame):
+        if self.pause:
+            return
         height, width, channel = frame.shape
         bytes_per_line = 3 * width
         img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -341,13 +344,15 @@ class DispositivoWidget(QWidget):
         self.image_label.setPixmap(pixmap)
 
     def start_button_clicked(self):
+        self.pause = False
+        yoloScript.change_stop(self.device, False)
+        self.change_delay()
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
-        yoloScript.change_stop(self.device, False)
-        self.change_delay()
 
     def stop_button_clicked(self):
+        yoloScript.change_stop(self.device, True)
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
@@ -357,16 +362,17 @@ class DispositivoWidget(QWidget):
         buffer = converted_image.bits()
         buffer.setsize(converted_image.byteCount())
         image_np = np.array(buffer).reshape(converted_image.height(), converted_image.width(), 4)
-
         self.update_image(image_np)
-        yoloScript.change_stop(self.device, True)
+        self.pause = True
 
     def live_button_clicked(self):
+        self.pause = False
+        yoloScript.change_stop(self.device, False)
+        yoloScript.change_delay(self.device, 0)
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-        yoloScript.change_stop(self.device, False)
-        yoloScript.change_delay(self.device, 0)
+
 
     def populate_combo_delay(self):
         self.combo_delay.clear()
