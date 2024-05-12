@@ -12,11 +12,13 @@ predicted_frames = {}
 stop_dict = {}
 delay_dict = {}
 obj_find_dict = {}
+delete_devices = []
 obj_find_lock = Lock()
 stop_lock = Lock()
 retrived_frames_lock = Lock()
 predicted_frames_lock = Lock()
 delay_lock = Lock()
+delete_devices_lock = Lock()
 
 
 
@@ -56,6 +58,9 @@ def predict(device, listObjToFind, queue, delay):
     error = 0
     stop = False
     while True:
+        with delete_devices_lock:
+            if device in delete_devices:
+                break
         with stop_lock:
             if device in stop_dict:
                 stop = stop_dict[device]
@@ -99,6 +104,9 @@ def predict(device, listObjToFind, queue, delay):
             results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280)
             last_frame = frame
+        with delete_devices_lock:
+            if device in delete_devices:
+                break
         with predicted_frames_lock:
             try:
                 predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
@@ -106,8 +114,6 @@ def predict(device, listObjToFind, queue, delay):
                 print(f"Error: {e}")
                 continue
             queue.put(predicted_frames)
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to exit
-            break
         for r in results:
             boxes = r.boxes.cpu().numpy()
             if not boxes or boxes.id is None or boxes.id.size == 0:
@@ -130,6 +136,9 @@ def predict(device, listObjToFind, queue, delay):
                         print(f"ID: {int(id)} -> Mover")
         i += 1
         while time.time() - start_time <= delay:
+            with delete_devices_lock:
+                if device in delete_devices:
+                    break
             with stop_lock:
                 if device in stop_dict:
                     stop = stop_dict[device]
@@ -140,6 +149,7 @@ def predict(device, listObjToFind, queue, delay):
                     delay = delay_dict[device]
             cap.grab()
     cap.release()
+    delete_devices.remove(device)
 
 
 def list_available_cameras():
@@ -182,5 +192,7 @@ def update_obj_to_find(device ,obj_to_find):
     global obj_find_dict
     obj_find_dict[device] = obj_to_find
 
+def remove_device(device):
+    delete_devices.append(device)
 
 

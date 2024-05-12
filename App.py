@@ -14,6 +14,7 @@ import yoloScript
 import multiprocessing
 
 all_dispositivos_widget = []
+global_devices = []
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
@@ -194,8 +195,9 @@ class DarkButton(QPushButton):
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
 
-    def __init__(self, name, device, objToFind):
+    def __init__(self, name, device, objToFind, dispositovo_window):
         super().__init__()
+        self.dispositivos_window = dispositovo_window
         self.pause = False
         self.name = name
         self.image_path = "frames/noCamera.jpg"  # Store the image path
@@ -218,6 +220,12 @@ class DispositivoWidget(QWidget):
         self.expand_button.setFixedSize(50, 50)
         self.expand_button.clicked.connect(self.expand_button_clicked)
 
+        self.remove_button = WidgetButton()
+        self.remove_button.setIcon(QIcon("icons/remove.png"))
+        self.remove_button.setIconSize(QSize(35, 35))
+        self.remove_button.setFixedSize(50, 50)
+        self.remove_button.clicked.connect(self.remove_button_clicked)
+
         layout_imagem = QHBoxLayout()
 
         self.iconPause = QIcon("icons/pause_circle.png")
@@ -229,6 +237,7 @@ class DispositivoWidget(QWidget):
         settings_layout = QVBoxLayout()
         settings_layout.addWidget(self.settings_button, alignment=Qt.AlignTop)
         settings_layout.addWidget(self.expand_button, alignment=Qt.AlignTop)
+        settings_layout.addWidget(self.remove_button, alignment=Qt.AlignTop)
         settings_layout.addStretch()
         layout_imagem.addWidget(self.image_label)
         layout_imagem.addLayout(settings_layout)
@@ -393,6 +402,11 @@ class DispositivoWidget(QWidget):
         print(delay)
         yoloScript.change_delay(self.device, delay)
 
+    def remove_button_clicked(self):
+        yoloScript.remove_device(self.device)
+        self.dispositivos_window.remove_device(self.device)
+        all_dispositivos_widget.remove(self)
+        self.deleteLater()
 
 class StyledScrollBar(QScrollBar):
     def __init__(self, *args, **kwargs):
@@ -489,7 +503,7 @@ class DispositivosWindow(QWidget):
 
     def add_dispositivo(self, name, device, objToFind):
         global all_dispositivos_widget
-        dispositivo_widget = DispositivoWidget(name, device, objToFind)
+        dispositivo_widget = DispositivoWidget(name, device, objToFind, self)
         all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
         dispositivo_widget.image_clicked.connect(self.show_image_window)
@@ -538,6 +552,9 @@ class DispositivosWindow(QWidget):
             device = int(device)
         self.add_dispositivo(name, device, selected_items)
 
+    def remove_device(self, device):
+        del self.dispositivos_dict[device]
+
 class AlertasWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -566,8 +583,6 @@ class ImageWindow(QMainWindow):
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
-
-global_devices = []
 
 class ListarThread(QThread):
     finished = pyqtSignal(list, bool)
