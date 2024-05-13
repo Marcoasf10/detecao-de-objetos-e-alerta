@@ -5,7 +5,7 @@ from threading import Thread
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
-from PyQt5.QtGui import QPixmap, QImage, QFont, QIcon, QPainter
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem
