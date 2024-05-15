@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
-    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, QSpacerItem, \
+    QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem
 from PyQt5 import QtCore
 import yoloScript
@@ -330,7 +330,9 @@ class DispositivoWidget(QWidget):
         self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
 
     def setting_button_clicked(self):
-        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind)
+        delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
+        print("delay", delay)
+        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind, time_frame=delay)
         self.config_dialog.done_clicked.connect(self.handle_done_clicked)
         self.config_dialog.exec_()
 
@@ -641,15 +643,18 @@ class ListarThread(QThread):
 
 
 class CustomWidget(QWidget):
-    def __init__(self, text):
+    def __init__(self, text, times):
         super().__init__()
 
         layout = QHBoxLayout()
         self.label = QLabel(text)
         self.combo_box = QComboBox()
-        self.combo_box.addItem("Opção 1")
-        self.combo_box.addItem("Opção 2")
-        self.combo_box.addItem("Opção 3")
+        self.times = times
+        for time in self.times:
+            if time < 60:
+                self.combo_box.addItem(str(time))
+            else:
+                break
 
         self.combo_box_time = QComboBox()
         self.combo_box_time.addItem("segundos")
@@ -660,6 +665,8 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box)
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
+
+        self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
 
         self.setStyleSheet("""
             QLabel {
@@ -694,16 +701,46 @@ class CustomWidget(QWidget):
                 color: #000000;
             }
         """)
-    
+
+    def update_time_unit(self, index):
+        unit = self.combo_box_time.itemText(index)
+        times = self.change_times(self.times, unit)
+        self.update_combo_box(times, unit)
+
+    def change_times(self, times, unit):
+        if unit == "segundos":
+            return times
+        elif unit == "minutos":
+            return [time / 60 for time in times]
+        elif unit == "horas":
+            return [time / 3600 for time in times]
+
+    def update_combo_box(self, times, unit):
+        self.combo_box.clear()
+        for time in times:
+            if time % 1 == 0:
+                if unit == "segundos":
+                    if time < 60:
+                        self.combo_box.addItem(str(int(time)))
+                    else:
+                        break
+                elif unit == "minutos":
+                    if time < 60:
+                        self.combo_box.addItem(str(int(time)))
+                    else:
+                        break
+                elif unit == "horas":
+                    self.combo_box.addItem(str(int(time)))
 
 
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list)
 
-    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}):
+    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}, time_frame=10):
         if objToFind is None:
             objToFind = []
         super().__init__()
+        print("time_frame", time_frame)
         self.setStyleSheet("""
                        ConfigurarDispositivo {
                            background-color: #5B5B5B;
@@ -774,6 +811,7 @@ class ConfigurarDispositivo(QDialog):
 
         self.class_names = list(set(yoloScript.get_classes()).difference(objToFind))
         self.class_names_selected = objToFind[:]
+        self.interval = time_frame
         self.setWindowTitle("Configurar Dispositivo")
         self.objetos_selecionados_labeb = QLabel("Objetos selecionados")
         self.dispositivo_dict = dispositivos_dict
@@ -917,12 +955,11 @@ class ConfigurarDispositivo(QDialog):
         label_alerta = QLabel("Emitir Alertas")
         label_alerta.setStyleSheet("font-size: 30px;")
         self.vertical_right_layout.addWidget(label_alerta, alignment=Qt.AlignTop | Qt.AlignHCenter)
-        #self.vertical_right_layout.addWidget(QLabel("Objetos selecionados"),  alignment=Qt.AlignCenter)
-        #self.vertical_right_layout.addWidget(self.objetos_alerta, alignment=Qt.AlignCenter)
         middle_layout.addWidget(QLabel("Objetos selecionados"), alignment=Qt.AlignCenter)
         middle_layout.addWidget(self.objetos_alerta, alignment=Qt.AlignCenter)
         self.vertical_right_layout.addLayout(middle_layout)
-        label = QLabel("Nesta janela pode definir o tempo de inatividade para cada objeto antes que um alerta seja emitido.")
+        label = QLabel(
+            "Nesta janela pode definir o tempo de inatividade para cada objeto antes que um alerta seja emitido.")
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignCenter)
         self.vertical_right_layout.addWidget(label, alignment=Qt.AlignBottom | Qt.AlignHCenter)
@@ -931,12 +968,22 @@ class ConfigurarDispositivo(QDialog):
     def next_page(self):
         self.current_page_index = 1
         self.stacked_widget.setCurrentIndex(self.current_page_index)
+        time_frames = self.available_times(self.interval)
         for classe in sorted(self.class_names_selected):
-            custom_widget = CustomWidget(classe)
+            custom_widget = CustomWidget(classe, time_frames)
             list_item = QListWidgetItem(self.objetos_alerta)
             list_item.setSizeHint(custom_widget.sizeHint())
             self.objetos_alerta.setItemWidget(list_item, custom_widget)
         print(self.objetos_alerta.size())
+
+    def available_times(self, interval):
+        max_time = 24 * 3600  # 24 horas em segundos
+        available_times = []
+
+        for time in range(0, max_time, interval):
+            available_times.append(time)
+
+        return available_times
 
     def previous_page(self):
         self.current_page_index = 0
