@@ -211,10 +211,10 @@ def remove_device(device):
     delete_devices.append(device)
 
 class Alerta:
-    def __init__(self, device, classe, descriçao, photo):
+    def __init__(self, device, classe, descricao, photo):
         self.device = device
         self.classe = classe
-        self.descricao = descriçao
+        self.descricao = descricao
         self.photo = photo
 
     def get_device(self):
