@@ -199,6 +199,7 @@ class DispositivoWidget(QWidget):
 
     def __init__(self, name, device, objToFind, dispositovo_window):
         super().__init__()
+        self.image_window = None
         self.dispositivos_window = dispositovo_window
         self.pause = False
         self.name = name
@@ -327,7 +328,8 @@ class DispositivoWidget(QWidget):
         return frame_with_icon
 
     def expand_button_clicked(self):
-        self.image_clicked.emit(self.name, QPixmap(self.image_path))  # Emit device name along with pixmap
+        self.image_window = ImageWindow(self.image_label.pixmap().scaledToWidth(800), self)
+        self.image_window.show()
 
     def setting_button_clicked(self):
         self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind)
@@ -353,6 +355,8 @@ class DispositivoWidget(QWidget):
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
+        if self.image_window is not None:
+            self.image_window.update_image(frame)
 
     def start_button_clicked(self):
         self.pause = False
@@ -408,8 +412,11 @@ class DispositivoWidget(QWidget):
         yoloScript.remove_device(self.device)
         self.dispositivos_window.remove_device(self.device)
         all_dispositivos_widget.remove(self)
+        self.image_window.hide()
+        self.image_window.close()
         self.deleteLater()
-
+    def handle_close_image_window(self):
+        self.image_window = None
 class StyledScrollBar(QScrollBar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -508,7 +515,6 @@ class DispositivosWindow(QWidget):
         dispositivo_widget = DispositivoWidget(name, device, objToFind, self)
         all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
-        dispositivo_widget.image_clicked.connect(self.show_image_window)
         if self.stacked_layout.currentIndex() == 1:
             self.mosaico_layout.addWidget(dispositivo_widget)
         if self.stacked_layout.currentIndex() == 0:
@@ -534,11 +540,6 @@ class DispositivosWindow(QWidget):
             except self.queue.empty:
                 print("Queue is empty.")
             time.sleep(0.5)
-
-    def show_image_window(self, name, pixmap):
-        print("Device Name:", name)  # Print the device name
-        self.image_window = ImageWindow(pixmap)
-        self.image_window.show()
 
     def open_device_ip_window(self):
         self.device_ip_window = ConfigurarDispositivo(dispositivos_dict=self.dispositivos_dict)
@@ -612,8 +613,9 @@ class AlertasWindow(QWidget):
 
 
 class ImageWindow(QMainWindow):
-    def __init__(self, pixmap):
+    def __init__(self, pixmap, parent=None):
         super().__init__()
+        self.dispositivo_widget = parent
         self.setWindowTitle("Image Window")
         self.setGeometry(0, 0, 800, 600)
         central_widget = QWidget()
@@ -631,6 +633,10 @@ class ImageWindow(QMainWindow):
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
+
+    def closeEvent(self, event):
+        self.dispositivo_widget.handle_close_image_window()
+        super().closeEvent(event)
 
 class ListarThread(QThread):
     finished = pyqtSignal(list, bool)
