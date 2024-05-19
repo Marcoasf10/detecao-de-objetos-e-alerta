@@ -414,8 +414,9 @@ class DispositivoWidget(QWidget):
         yoloScript.remove_device(self.device)
         self.dispositivos_window.remove_device(self.device)
         all_dispositivos_widget.remove(self)
-        self.image_window.hide()
-        self.image_window.close()
+        if self.image_window is not None:
+            self.image_window.hide()
+            self.image_window.close()
         self.deleteLater()
     def handle_close_image_window(self):
         self.image_window = None
@@ -737,6 +738,16 @@ class CustomWidget(QWidget):
                         break
                 elif unit == "horas":
                     self.combo_box.addItem(str(int(time)))
+    def get_classe(self):
+        return self.label.text()
+
+    def get_time(self):
+        if self.combo_box_time.currentText() == "segundos":
+            return self.combo_box.currentText()
+        if self.combo_box_time.currentText() == "minutos":
+            return self.combo_box.currentText() * 60
+        if self.combo_box_time.currentText() == "horas":
+            return self.combo_box.currentText() * 3600
 
 
 class ConfigurarDispositivo(QDialog):
@@ -825,6 +836,7 @@ class ConfigurarDispositivo(QDialog):
         self.page1 = QWidget()
         self.page2 = QWidget()
         self.current_page_index = 0
+        self.class_alertas = []
 
         # Configuração das duas páginas
         self.setup_page1(device, name)
@@ -976,11 +988,12 @@ class ConfigurarDispositivo(QDialog):
         self.stacked_widget.setCurrentIndex(self.current_page_index)
         time_frames = self.available_times(self.interval)
         for classe in sorted(self.class_names_selected):
-            custom_widget = CustomWidget(classe, time_frames)
-            list_item = QListWidgetItem(self.objetos_alerta)
-            list_item.setSizeHint(custom_widget.sizeHint())
-            self.objetos_alerta.setItemWidget(list_item, custom_widget)
-        print(self.objetos_alerta.size())
+            if classe not in self.class_alertas:
+                custom_widget = CustomWidget(classe, time_frames)
+                list_item = QListWidgetItem(self.objetos_alerta)
+                list_item.setSizeHint(custom_widget.sizeHint())
+                self.objetos_alerta.setItemWidget(list_item, custom_widget)
+                self.class_alertas.append(classe)
 
     def available_times(self, interval):
         max_time = 24 * 3600  # 24 horas em segundos
@@ -994,7 +1007,6 @@ class ConfigurarDispositivo(QDialog):
     def previous_page(self):
         self.current_page_index = 0
         self.stacked_widget.setCurrentIndex(self.current_page_index)
-        self.objetos_alerta.clear()
 
     def filter_list(self):
         search_text = self.search_bar.text().lower()
@@ -1047,6 +1059,12 @@ class ConfigurarDispositivo(QDialog):
             QMessageBox.warning(self, "Erro", "Selecione um dispositivo.")
             return
         selected_items = [self.objectsSelected.item(i).text() for i in range(self.objectsSelected.count())]
+        tempo_alertas = {}
+        for i in range(self.objetos_alerta.count()):
+            list_item = self.objetos_alerta.item(i)
+            custom_widget = self.objetos_alerta.itemWidget(list_item)
+            tempo_alertas[custom_widget.get_classe()] = custom_widget.get_time()
+        print(tempo_alertas)
         self.done_clicked.emit(name, device, selected_items)
         self.accept()
 
