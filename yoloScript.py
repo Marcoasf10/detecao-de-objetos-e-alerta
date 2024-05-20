@@ -13,20 +13,27 @@ predicted_frames = {}
 stop_dict = {}
 delay_dict = {}
 obj_find_dict = {}
+alert_time_dict = {}
+alerta_tempo_start = {}
 delete_devices = []
 obj_find_lock = Lock()
 stop_lock = Lock()
 retrived_frames_lock = Lock()
 predicted_frames_lock = Lock()
 delay_lock = Lock()
+alert_time_lock = Lock()
+alerta_tempo_start_lock = Lock()
 delete_devices_lock = Lock()
 
 
 
-def addDispositivoToPredict(device, classes, queue, delay):
+def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
     listObjToFind = []
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
+    change_alert_time(device, lista_alertas)
+    for classe, tempo in lista_alertas.items():
+        alerta_tempo_start[device][classe] = time.time()
     thread = Thread(target=predict, args=(device, listObjToFind, queue, delay))
     thread.start()
     thread.join()
@@ -58,8 +65,6 @@ def predict(device, listObjToFind, queue, delay):
     last_frame = None
     error = 0
     stop = False
-    parado = 0
-    mover = 0
     alerta_filename = 'alertas.bin'
     while True:
         with delete_devices_lock:
@@ -86,7 +91,7 @@ def predict(device, listObjToFind, queue, delay):
                     listObjToFind.append(list(model.names.values()).index(classe))
         if last_frame is None:
             time.sleep(0.1)
-        start_time = time.time()
+        start_time_predict = time.time()
         grabbed = cap.grab()
         if not grabbed:
             cap.release()
@@ -132,25 +137,27 @@ def predict(device, listObjToFind, queue, delay):
                         canto2Mapper[id] = (x2, y2, -1)
                     canto1Mapper[id] = (x1, y1, distance(canto1Mapper[id][0], x1, canto1Mapper[id][1], y1))
                     canto2Mapper[id] = (x2, y2, distance(canto2Mapper[id][0], x2, canto2Mapper[id][1], y2))
+                    classe_obj = local_model.names[boxes.cls[f]]
                     if canto1Mapper[id][2] == -1 and canto2Mapper[id][2] == -1:
                         continue
                     if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
-                        mover = 0
                         print(f"ID: {int(id)} -> Parado")
-                        parado += 1
+                        with alert_time_lock:
+                            tempo_alerta = alert_time_dict[device][classe_obj]
+                        with alerta_tempo_start_lock:
+                            tempo_last = alerta_tempo_start[device][classe_obj]
+                        if time.time() - tempo_last >= tempo_alerta:
+                            alerta_tempo_start[device][classe_obj] = time.time()
+                            descricao = f'O objeto: {classe_obj} está parado á 10 segundos'
+                            print("Gerado ALERTA!")
+                            alerta = Alerta(device, classe_obj, descricao, frame)
+                            with open(alerta_filename, 'ab') as f:
+                                pickle.dump(alerta, f)
                     else:
-                        parado = 0
+                        alerta_tempo_start[device][classe_obj] = time.time()
                         print(f"ID: {int(id)} -> Mover")
-                        mover += 1
-            if parado >= 10:
-                parado = 0
-                descricao = f'O objeto: {local_model.names[boxes.cls[f]]} está parado á 10 segundos'
-                alerta = Alerta(device, local_model.names[boxes.cls[f]], descricao, frame)
-                with open(alerta_filename, 'ab') as f:
-                    pickle.dump(alerta, f)
-
         i += 1
-        while time.time() - start_time <= delay:
+        while time.time() - start_time_predict <= delay:
             with delete_devices_lock:
                 if device in delete_devices:
                     break
@@ -209,6 +216,11 @@ def update_obj_to_find(device ,obj_to_find):
 
 def remove_device(device):
     delete_devices.append(device)
+
+def change_alert_time(device, time_dict):
+    alert_time_dict[device] = time_dict
+    for classe, tempo in alert_time_dict[device].items():
+        alerta_tempo_start[device] = {classe: time.time()}
 
 class Alerta:
     def __init__(self, device, classe, descricao, photo):

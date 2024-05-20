@@ -524,13 +524,13 @@ class DispositivosWindow(QWidget):
             self.mosaico_layout.addWidget(dispositivo_widget)
         if self.stacked_layout.currentIndex() == 0:
             self.horizontal_layout.addWidget(dispositivo_widget)
-        Thread(target=self.runscript_thread, args=(device, objToFind)).start()
+        Thread(target=self.runscript_thread, args=(device, objToFind, lista_alertas)).start()
         if not self.reading:
             Thread(target=self.readQueue).start()
             self.reading = True
 
-    def runscript_thread(self, device, objToFind):
-        yoloScript.addDispositivoToPredict(device, objToFind, self.queue, 10)
+    def runscript_thread(self, device, objToFind, alertas_dict):
+        yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10)
 
     def readQueue(self):
         while True:
@@ -674,7 +674,13 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
         if tempo is not None:
-            self.combo_box.setCurrentText(tempo)
+            if tempo >= 3600:
+                self.update_time_unit(2)
+                tempo = tempo / 3600
+            elif tempo >= 60:
+                self.update_time_unit(1)
+                tempo = tempo / 60
+            self.combo_box.setCurrentText(str(tempo))
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
 
         self.setStyleSheet("""
@@ -745,11 +751,11 @@ class CustomWidget(QWidget):
 
     def get_time(self):
         if self.combo_box_time.currentText() == "segundos":
-            return self.combo_box.currentText()
+            return int(self.combo_box.currentText())
         if self.combo_box_time.currentText() == "minutos":
-            return self.combo_box.currentText() * 60
+            return int(self.combo_box.currentText()) * 60
         if self.combo_box_time.currentText() == "horas":
-            return self.combo_box.currentText() * 3600
+            return int(self.combo_box.currentText()) * 3600
 
 
 class ConfigurarDispositivo(QDialog):
