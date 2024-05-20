@@ -197,7 +197,7 @@ class DarkButton(QPushButton):
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
 
-    def __init__(self, name, device, objToFind, dispositovo_window):
+    def __init__(self, name, device, objToFind, lista_alertas ,dispositovo_window):
         super().__init__()
         self.image_window = None
         self.dispositivos_window = dispositovo_window
@@ -307,6 +307,7 @@ class DispositivoWidget(QWidget):
         button_layout.addWidget(self.combo_delay)
         layout.addLayout(button_layout)
         self.start_button_clicked()
+        self.lista_alertas = lista_alertas
 
         # Connect image clicked signal to slot
         #self.image_label.mousePressEvent = self.on_image_clicked
@@ -334,17 +335,18 @@ class DispositivoWidget(QWidget):
     def setting_button_clicked(self):
         delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
         print("delay", delay)
-        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind, time_frame=delay)
+        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind, alertas_dict=self.lista_alertas , time_frame=delay)
         self.config_dialog.done_clicked.connect(self.handle_done_clicked)
         self.config_dialog.exec_()
 
-    def handle_done_clicked(self, name, device, selected_items):
+    def handle_done_clicked(self, name, device, selected_items, lista_alertas):
         print(f"Updating device '{device}' with selected items: {selected_items}")
         self.name = name
         self.label.setText(name)
         self.objToFind = selected_items
         if device.isdigit():
             deviceInt = int(device)
+        self.lista_alertas = lista_alertas
         yoloScript.update_obj_to_find(deviceInt, self.objToFind)
 
     def update_image(self, frame):
@@ -513,9 +515,9 @@ class DispositivosWindow(QWidget):
             self.mosaico_layout.removeWidget(widget)
             self.horizontal_layout.addWidget(widget)
 
-    def add_dispositivo(self, name, device, objToFind):
+    def add_dispositivo(self, name, device, objToFind, lista_alertas):
         global all_dispositivos_widget
-        dispositivo_widget = DispositivoWidget(name, device, objToFind, self)
+        dispositivo_widget = DispositivoWidget(name, device, objToFind, lista_alertas, self)
         all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
         if self.stacked_layout.currentIndex() == 1:
@@ -549,14 +551,14 @@ class DispositivosWindow(QWidget):
         self.device_ip_window.done_clicked.connect(self.handle_done_clicked)
         self.device_ip_window.exec_()
 
-    def handle_done_clicked(self, name, device, selected_items):
+    def handle_done_clicked(self, name, device, selected_items, lista_alertas):
         if device in self.dispositivos_dict.keys():
             QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
             return
         print(f"Adding new device '{name}' with selected items: {selected_items}")
         if device.isdigit():
             device = int(device)
-        self.add_dispositivo(name, device, selected_items)
+        self.add_dispositivo(name, device, selected_items, lista_alertas)
 
     def remove_device(self, device):
         del self.dispositivos_dict[device]
@@ -650,9 +652,8 @@ class ListarThread(QThread):
 
 
 class CustomWidget(QWidget):
-    def __init__(self, text, times):
+    def __init__(self, text, times, tempo = None):
         super().__init__()
-
         layout = QHBoxLayout()
         self.label = QLabel(text)
         self.combo_box = QComboBox()
@@ -672,7 +673,8 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box)
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
-
+        if tempo is not None:
+            self.combo_box.setCurrentText(tempo)
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
 
         self.setStyleSheet("""
@@ -751,9 +753,9 @@ class CustomWidget(QWidget):
 
 
 class ConfigurarDispositivo(QDialog):
-    done_clicked = QtCore.pyqtSignal(str, str, list)
+    done_clicked = QtCore.pyqtSignal(str, str, list, dict)
 
-    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}, time_frame=10):
+    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}, alertas_dict = {},time_frame=10):
         if objToFind is None:
             objToFind = []
         super().__init__()
@@ -840,7 +842,7 @@ class ConfigurarDispositivo(QDialog):
 
         # Configuração das duas páginas
         self.setup_page1(device, name)
-        self.setup_page2()
+        self.setup_page2(alertas_dict)
 
         # Adicionando as páginas ao QStackedWidget
         self.stacked_widget.addWidget(self.page1)
@@ -956,7 +958,7 @@ class ConfigurarDispositivo(QDialog):
             self.atualizar_dispositivos_button.setEnabled(False)
             self.testButton.setEnabled(False)
 
-    def setup_page2(self):
+    def setup_page2(self, alertas_dict):
         layout = QHBoxLayout(self.page2)
         vertical_left_layout = QVBoxLayout()
         self.vertical_right_layout = QVBoxLayout()
@@ -982,6 +984,15 @@ class ConfigurarDispositivo(QDialog):
         label.setAlignment(Qt.AlignCenter)
         self.vertical_right_layout.addWidget(label, alignment=Qt.AlignBottom | Qt.AlignHCenter)
         layout.addLayout(self.vertical_right_layout)
+        if len(alertas_dict) != 0:
+            for classe, tempo in alertas_dict.items():
+                time_frames = self.available_times(self.interval)
+                custom_widget = CustomWidget(classe, time_frames, tempo)
+                list_item = QListWidgetItem(self.objetos_alerta)
+                list_item.setSizeHint(custom_widget.sizeHint())
+                self.objetos_alerta.setItemWidget(list_item, custom_widget)
+                self.class_alertas.append(classe)
+
 
     def next_page(self):
         self.current_page_index = 1
@@ -1064,8 +1075,7 @@ class ConfigurarDispositivo(QDialog):
             list_item = self.objetos_alerta.item(i)
             custom_widget = self.objetos_alerta.itemWidget(list_item)
             tempo_alertas[custom_widget.get_classe()] = custom_widget.get_time()
-        print(tempo_alertas)
-        self.done_clicked.emit(name, device, selected_items)
+        self.done_clicked.emit(name, device, selected_items, tempo_alertas)
         self.accept()
 
     def atualizar_dispositivos(self):
