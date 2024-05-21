@@ -32,9 +32,7 @@ def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     change_alert_time(device, lista_alertas)
-    for classe, tempo in lista_alertas.items():
-        alerta_tempo_start[device][classe] = time.time()
-    thread = Thread(target=predict, args=(device, listObjToFind, queue, delay))
+    thread = Thread(target=predict, args=(device, listObjToFind, queue, delay, lista_alertas))
     thread.start()
     thread.join()
     cv2.destroyAllWindows()
@@ -51,11 +49,13 @@ def diferenceImgs(img1, img2):
     return mse, diff
 
 
-def predict(device, listObjToFind, queue, delay):
+def predict(device, listObjToFind, queue, delay, lista_alertas):
     global predicted_frames
     global stop_dict
     global delay_dict
     global obj_find_dict
+    global alerta_tempo_start
+    global alert_time_dict
     canto1Mapper = dict()
     canto2Mapper = dict()
     local_model = YOLO(modelo)
@@ -130,7 +130,14 @@ def predict(device, listObjToFind, queue, delay):
                 continue
             if boxes:
                 for f in range(boxes.id.size):
-                    id = boxes.id[f]
+                    id = int(boxes.id[f])
+                    if id not in alerta_tempo_start:
+                        with alerta_tempo_start_lock:
+                            if id not in alerta_tempo_start:
+                                alerta_tempo_start[id] = {}
+                                alerta_tempo_start[id][device] = {}
+                            for classe, tempo in lista_alertas.items():
+                                alerta_tempo_start[id][device][classe] = time.time()
                     x1, y1, x2, y2 = boxes.xyxy[f]
                     if id not in canto1Mapper and id not in canto2Mapper:
                         canto1Mapper[id] = (x1, y1, -1)
@@ -143,18 +150,20 @@ def predict(device, listObjToFind, queue, delay):
                     if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
                         print(f"ID: {int(id)} -> Parado")
                         with alert_time_lock:
+                            print(alert_time_dict[device])
                             tempo_alerta = alert_time_dict[device][classe_obj]
                         with alerta_tempo_start_lock:
-                            tempo_last = alerta_tempo_start[device][classe_obj]
+                            tempo_last = alerta_tempo_start[id][device][classe_obj]
                         if time.time() - tempo_last >= tempo_alerta:
-                            alerta_tempo_start[device][classe_obj] = time.time()
+                            with alerta_tempo_start_lock:
+                                alerta_tempo_start[id][device][classe_obj] = time.time()
                             descricao = f'O objeto: {classe_obj} está parado á 10 segundos'
                             print("Gerado ALERTA!")
                             alerta = Alerta(device, classe_obj, descricao, frame)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
-                        alerta_tempo_start[device][classe_obj] = time.time()
+                        alerta_tempo_start[id][device][classe_obj] = time.time()
                         print(f"ID: {int(id)} -> Mover")
         i += 1
         while time.time() - start_time_predict <= delay:
@@ -219,8 +228,6 @@ def remove_device(device):
 
 def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
-    for classe, tempo in alert_time_dict[device].items():
-        alerta_tempo_start[device] = {classe: time.time()}
 
 class Alerta:
     def __init__(self, device, classe, descricao, photo):
