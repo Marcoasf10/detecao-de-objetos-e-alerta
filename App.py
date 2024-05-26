@@ -673,14 +673,6 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box)
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
-        if tempo is not None:
-            if tempo >= 3600:
-                self.update_time_unit(2)
-                tempo = tempo / 3600
-            elif tempo >= 60:
-                self.update_time_unit(1)
-                tempo = tempo / 60
-            self.combo_box.setCurrentText(str(tempo))
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
 
         self.setStyleSheet("""
@@ -716,6 +708,17 @@ class CustomWidget(QWidget):
                 color: #000000;
             }
         """)
+
+        if tempo is not None:
+            if tempo >= 3600:
+                self.update_time_unit(2)
+                tempo = tempo / 3600
+                self.combo_box_time.setCurrentText("horas")
+            elif tempo >= 60:
+                self.update_time_unit(1)
+                self.combo_box_time.setCurrentText("minutos")
+                tempo = tempo / 60
+            self.combo_box.setCurrentText(str(int(tempo)))
 
     def update_time_unit(self, index):
         unit = self.combo_box_time.itemText(index)
@@ -1059,7 +1062,8 @@ class ConfigurarDispositivo(QDialog):
                 self.availableObjects.addItem(item.text())
                 self.class_names.append(item.text())
                 self.class_names_selected.remove(item.text())
-                del self.tempo_alertas[item.text()]
+                if item.text() in self.tempo_alertas:
+                    del self.tempo_alertas[item.text()]
                 for i in range(self.objetos_alerta.count()):
                     list_item = self.objetos_alerta.item(i)
                     custom_widget = self.objetos_alerta.itemWidget(list_item)
