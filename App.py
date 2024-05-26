@@ -347,7 +347,7 @@ class DispositivoWidget(QWidget):
         if device.isdigit():
             deviceInt = int(device)
         self.lista_alertas = lista_alertas
-        yoloScript.update_obj_to_find(deviceInt, self.objToFind)
+        yoloScript.update_obj_to_find(deviceInt, self.objToFind, self.lista_alertas)
 
     def update_image(self, frame):
         if self.pause:
@@ -849,6 +849,7 @@ class ConfigurarDispositivo(QDialog):
         # Configuração das duas páginas
         self.setup_page1(device, name)
         self.setup_page2(alertas_dict)
+        self.tempo_alertas = {}
 
         # Adicionando as páginas ao QStackedWidget
         self.stacked_widget.addWidget(self.page1)
@@ -1039,6 +1040,7 @@ class ConfigurarDispositivo(QDialog):
                 self.availableObjects.takeItem(self.availableObjects.row(item))
                 self.class_names.remove(item.text())
                 self.class_names_selected.append(item.text())
+                self.tempo_alertas[item.text()] = 0
         self.repaint()
 
     def buttonRemovef(self):
@@ -1076,12 +1078,12 @@ class ConfigurarDispositivo(QDialog):
             QMessageBox.warning(self, "Erro", "Selecione um dispositivo.")
             return
         selected_items = [self.objectsSelected.item(i).text() for i in range(self.objectsSelected.count())]
-        tempo_alertas = {}
+
         for i in range(self.objetos_alerta.count()):
             list_item = self.objetos_alerta.item(i)
             custom_widget = self.objetos_alerta.itemWidget(list_item)
-            tempo_alertas[custom_widget.get_classe()] = custom_widget.get_time()
-        self.done_clicked.emit(name, device, selected_items, tempo_alertas)
+            self.tempo_alertas[custom_widget.get_classe()] = custom_widget.get_time()
+        self.done_clicked.emit(name, device, selected_items, self.tempo_alertas)
         self.accept()
 
     def atualizar_dispositivos(self):

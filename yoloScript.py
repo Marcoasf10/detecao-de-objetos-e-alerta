@@ -154,7 +154,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                             tempo_alerta = alert_time_dict[device][classe_obj]
                         with alerta_tempo_start_lock:
                             tempo_last = alerta_tempo_start[id][device][classe_obj]
-                        if time.time() - tempo_last >= tempo_alerta:
+                        if time.time() - tempo_last >= tempo_alerta != 0:
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[id][device][classe_obj] = time.time()
                             descricao = f'O objeto: {classe_obj} está parado á 10 segundos'
@@ -219,9 +219,10 @@ def change_delay(device, delay):
 def get_classes():
     return list(model.names.values())
 
-def update_obj_to_find(device ,obj_to_find):
+def update_obj_to_find(device ,obj_to_find, lista_alertas):
     global obj_find_dict
     obj_find_dict[device] = obj_to_find
+    change_alert_time(device, lista_alertas)
 
 def remove_device(device):
     delete_devices.append(device)
