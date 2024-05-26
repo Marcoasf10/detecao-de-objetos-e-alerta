@@ -726,9 +726,15 @@ class CustomWidget(QWidget):
         if unit == "segundos":
             return times
         elif unit == "minutos":
-            return [time / 60 for time in times]
+            times = []
+            for i in range(0, 60, 1):
+                times.append(i)
+            return times
         elif unit == "horas":
-            return [time / 3600 for time in times]
+            times = []
+            for i in range(0, 24, 1):
+                times.append(i)
+            return times
 
     def update_combo_box(self, times, unit):
         self.combo_box.clear()
@@ -975,6 +981,7 @@ class ConfigurarDispositivo(QDialog):
         self.button_prev.setFixedSize(50, 50)
         self.button_prev.clicked.connect(self.previous_page)
         self.objetos_alerta = QListWidget()
+        self.objetos_alerta.setSelectionMode(QAbstractItemView.NoSelection)
         self.objetos_alerta.setMinimumSize(300, 250)
         vertical_left_layout.addWidget(self.button_prev)
         layout.addLayout(vertical_left_layout)
@@ -1010,6 +1017,7 @@ class ConfigurarDispositivo(QDialog):
                 custom_widget = CustomWidget(classe, time_frames)
                 list_item = QListWidgetItem(self.objetos_alerta)
                 list_item.setSizeHint(custom_widget.sizeHint())
+                print(self.objetos_alerta)
                 self.objetos_alerta.setItemWidget(list_item, custom_widget)
                 self.class_alertas.append(classe)
 
@@ -1051,6 +1059,15 @@ class ConfigurarDispositivo(QDialog):
                 self.availableObjects.addItem(item.text())
                 self.class_names.append(item.text())
                 self.class_names_selected.remove(item.text())
+                del self.tempo_alertas[item.text()]
+                for i in range(self.objetos_alerta.count()):
+                    list_item = self.objetos_alerta.item(i)
+                    custom_widget = self.objetos_alerta.itemWidget(list_item)
+                    if custom_widget.get_classe() == item.text():
+                        self.objetos_alerta.takeItem(i)
+                        break
+                if item.text() in self.class_alertas:
+                    self.class_alertas.remove(item.text())
         self.availableObjects.sortItems()
         self.repaint()
 
