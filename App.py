@@ -17,6 +17,7 @@ import pickle
 all_dispositivos_widget = []
 global_devices = []
 
+
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
@@ -50,6 +51,7 @@ class MosaicoLayout(QWidget):
         super().__init__()
         self.layout = QGridLayout(self)
         self.num_devices = 0
+
     def addWidget(self, widget):
         widget.setMaximumSize(400, 400)
         row = self.num_devices // 3
@@ -137,6 +139,7 @@ class SplashScreen(QWidget):
 
         self.counter += 1
 
+
 class LightButton(QPushButton):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
@@ -151,6 +154,7 @@ class LightButton(QPushButton):
             }
         """)
 
+
 class WidgetButton(QPushButton):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
@@ -164,6 +168,8 @@ class WidgetButton(QPushButton):
                 background-color: #D9D9D9;
             }
         """)
+
+
 class WidgetPressedButton(QPushButton):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
@@ -197,7 +203,7 @@ class DarkButton(QPushButton):
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
 
-    def __init__(self, name, device, objToFind, lista_alertas ,dispositovo_window):
+    def __init__(self, name, device, objToFind, lista_alertas, dispositovo_window):
         super().__init__()
         self.image_window = None
         self.dispositivos_window = dispositovo_window
@@ -335,7 +341,8 @@ class DispositivoWidget(QWidget):
     def setting_button_clicked(self):
         delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
         print("delay", delay)
-        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind, alertas_dict=self.lista_alertas , time_frame=delay)
+        self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind,
+                                                   alertas_dict=self.lista_alertas, time_frame=delay)
         self.config_dialog.done_clicked.connect(self.handle_done_clicked)
         self.config_dialog.exec_()
 
@@ -392,7 +399,6 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #5B5B5B}")
 
-
     def populate_combo_delay(self):
         self.combo_delay.clear()
         self.combo_delay.addItem("1 segundo", 1)
@@ -420,8 +426,11 @@ class DispositivoWidget(QWidget):
             self.image_window.hide()
             self.image_window.close()
         self.deleteLater()
+
     def handle_close_image_window(self):
         self.image_window = None
+
+
 class StyledScrollBar(QScrollBar):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -493,6 +502,7 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setEnabled(True)
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+
     def layout_mosaico(self):
         global all_dispositivos_widget
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -503,7 +513,6 @@ class DispositivosWindow(QWidget):
         for widget in all_dispositivos_widget:
             self.horizontal_layout.removeWidget(widget)
             self.mosaico_layout.addWidget(widget)
-
 
     def layout_horizontal(self):
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -565,27 +574,68 @@ class DispositivosWindow(QWidget):
 
 
 class AlertaWidget(QWidget):
-    def __init__(self, device, classe, descricao, frame):
+    def __init__(self, alerta, alerta_window):
         super().__init__()
+        self.setFixedHeight(150)
+        self.alerta = alerta
+        # Layout principal que conterá todos os elementos
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+        self.alerta_window = alerta_window
+        # Layout de grade para posicionar o botão no canto superior esquerdo
+        top_layout = QGridLayout()
+        main_layout.addLayout(top_layout)
+
+        # Botão para eliminar o widget
+        self.remove_button = QPushButton()
+        self.remove_button.setIcon(QIcon("icons/close_white.png"))
+        self.remove_button.setIconSize(QSize(15, 15))
+        self.remove_button.setFixedSize(25, 25)
+        self.remove_button.clicked.connect(self.remove_button_clicked)
+        top_layout.addWidget(self.remove_button, 0, 0, Qt.AlignTop | Qt.AlignRight)
+
+        # Layout horizontal para o restante do conteúdo
         self.item_layout = QHBoxLayout()
+        main_layout.addLayout(self.item_layout)
 
-        texto_esquerda = QLabel(descricao)
+        # Adiciona o texto à esquerda
+        texto_esquerda = QLabel(alerta.get_descricao())
         texto_esquerda.setStyleSheet("font-size: 16px; color: #FFFFFF")
-
         self.item_layout.addWidget(texto_esquerda)
 
+        # Adiciona a imagem à direita
         imagem_direita = QLabel()
-        height, width, channel = frame.shape
+        height, width, channel = alerta.get_photo().shape
         bytes_per_line = 3 * width
-        img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img_array_rgb = cv2.cvtColor(alerta.get_photo(), cv2.COLOR_BGR2RGB)
         q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
         pixmap = pixmap.scaledToWidth(100)
         imagem_direita.setPixmap(pixmap)
         self.item_layout.addWidget(imagem_direita, alignment=Qt.AlignRight)
-        self.device = device
-        self.classe = classe
-        self.setLayout(self.item_layout)
+
+        self.device = alerta.get_device()
+        self.classe = alerta.get_classe()
+
+    def remove_button_clicked(self):
+        try:
+            alertas = []
+            with open('alertas.bin', 'rb') as f:
+                while True:
+                    try:
+                        alertas.append(pickle.load(f))
+                    except EOFError:
+                        break
+            alertas = [a for a in alertas if not np.array_equal(a.get_photo(), self.alerta.get_photo())]
+            with open('alertas.bin', 'wb') as f:
+                for alerta in alertas:
+                    pickle.dump(alerta, f)
+        except Exception as e:
+            print(f"Erro ao remover alerta: {e}")
+
+        self.alerta_window.remove_alerta_widget(self)
+        self.setParent(None)
+        self.deleteLater()
 
 class AlertasWindow(QWidget):
     def __init__(self):
@@ -593,6 +643,7 @@ class AlertasWindow(QWidget):
         self.setWindowTitle("Alertas")
         self.setGeometry(100, 100, 600, 400)  # Definindo a geometria da janela
         self.layout = QVBoxLayout()
+        self.layout.setAlignment(Qt.AlignTop)
         self.setLayout(self.layout)
         self.alertas_widgets = []
 
@@ -610,11 +661,12 @@ class AlertasWindow(QWidget):
         except EOFError:
             pass
         for alerta in alertas:
-            alerta_widget = AlertaWidget(alerta.get_device(), alerta.get_classe(), alerta.get_descricao(), alerta.get_photo())
+            alerta_widget = AlertaWidget(alerta, self)
             self.alertas_widgets.append(alerta_widget)
             self.layout.addWidget(alerta_widget)
 
-
+    def remove_alerta_widget(self, alerta_widget):
+        self.alertas_widgets.remove(alerta_widget)
 
 
 class ImageWindow(QMainWindow):
@@ -643,8 +695,10 @@ class ImageWindow(QMainWindow):
         self.dispositivo_widget.handle_close_image_window()
         super().closeEvent(event)
 
+
 class ListarThread(QThread):
     finished = pyqtSignal(list, bool)
+
     def run(self):
         global global_devices
         global_devices = yoloScript.list_available_cameras()
@@ -652,7 +706,7 @@ class ListarThread(QThread):
 
 
 class CustomWidget(QWidget):
-    def __init__(self, text, times, tempo = None):
+    def __init__(self, text, times, tempo=None):
         super().__init__()
         layout = QHBoxLayout()
         self.label = QLabel(text)
@@ -755,6 +809,7 @@ class CustomWidget(QWidget):
                         break
                 elif unit == "horas":
                     self.combo_box.addItem(str(int(time)))
+
     def get_classe(self):
         return self.label.text()
 
@@ -770,7 +825,7 @@ class CustomWidget(QWidget):
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list, dict)
 
-    def __init__(self, name="", device="", objToFind=None, dispositivos_dict = {}, alertas_dict = {},time_frame=10):
+    def __init__(self, name="", device="", objToFind=None, dispositivos_dict={}, alertas_dict={}, time_frame=10):
         if objToFind is None:
             objToFind = []
         super().__init__()
@@ -1010,7 +1065,6 @@ class ConfigurarDispositivo(QDialog):
                 self.objetos_alerta.setItemWidget(list_item, custom_widget)
                 self.class_alertas.append(classe)
 
-
     def next_page(self):
         self.current_page_index = 1
         self.stacked_widget.setCurrentIndex(self.current_page_index)
@@ -1120,7 +1174,7 @@ class ConfigurarDispositivo(QDialog):
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
             self.device_combo_box.setCurrentIndex(0)
-        if(has_dispositivos):
+        if (has_dispositivos):
             self.label_procura_dispositivo.hide()
             self.atualizar_dispositivos_button.setEnabled(True)
 
@@ -1197,14 +1251,18 @@ class MainWindow(QWidget):
 
     def show_dispositivos(self):
         self.stacked_layout.setCurrentIndex(0)
-        self.dispositivos_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
-        self.alertas_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-left-radius:20%; font-size: 20px; padding:10px 0")
+        self.dispositivos_button.setStyleSheet(
+            "background-color: #292929; border: none; font-size: 20px; padding:10px 0")
+        self.alertas_button.setStyleSheet(
+            "background-color: #5B5B5B; border: none; border-bottom-left-radius:20%; font-size: 20px; padding:10px 0")
 
     def show_alertas(self):
         self.alertas_window.carregar_alertas()
         self.stacked_layout.setCurrentIndex(1)
-        self.dispositivos_button.setStyleSheet("background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
+        self.dispositivos_button.setStyleSheet(
+            "background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
         self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
