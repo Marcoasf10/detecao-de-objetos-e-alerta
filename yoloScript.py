@@ -180,8 +180,12 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                     delay = delay_dict[device]
             cap.grab()
     cap.release()
-    alert_time_dict[device] = {}
-    alerta_tempo_start[device] = {}
+    with alert_time_lock:
+        alert_time_dict[device] = {}
+    with alerta_tempo_start_lock:
+        alerta_tempo_start[device] = {}
+    with obj_find_lock:
+        obj_find_dict[device] = {}
     delete_devices.remove(device)
 
 

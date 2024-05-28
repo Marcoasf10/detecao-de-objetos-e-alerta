@@ -548,11 +548,15 @@ class DispositivosWindow(QWidget):
                 if frames == -1:
                     self.timer.stop()
                 for device, frame in frames.items():
-                    self.dispositivos_dict[device].update_image(frame)
+                    if device in self.dispositivos_dict.keys():
+                        self.dispositivos_dict[device].update_image(frame)
                     if self.image_window is not None:
                         self.image_window.update_image(frame)
             except self.queue.empty:
                 print("Queue is empty.")
+            except Exception as e:
+                print(f"Error reading queue: {e}")
+
             time.sleep(0.5)
 
     def open_device_ip_window(self):
