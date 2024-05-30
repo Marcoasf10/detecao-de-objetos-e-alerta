@@ -644,15 +644,108 @@ class AlertaWidget(QWidget):
 class AlertasWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.alertas = []
         self.setWindowTitle("Alertas")
         self.setGeometry(100, 100, 600, 400)  # Definindo a geometria da janela
         self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignTop)
+        # Filters layout
+        self.filter_layout = QHBoxLayout()
+        self.device_filter = QComboBox()
+        self.label_device = QLabel("Device: ")
+        self.device_filter.setEditable(True)
+        self.device_filter.setPlaceholderText("Filter by device")
+        self.object_filter = QComboBox()
+        self.label_object = QLabel("Object: ")
+        self.object_filter.setEditable(True)
+        self.object_filter.setPlaceholderText("Filter by object")
+        self.label_ordem = QLabel("Order by: ")
+        self.order_filter = QComboBox()
+        self.filter_layout.addWidget(self.label_device, 0 , Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.device_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addWidget(self.label_object, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.object_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
+        self.order_filter.addItems(["Order by date ↑", "Order by date ↓"])
+
+        self.layout.addLayout(self.filter_layout)
+
+        # Add a button layout
+        # Add a button layout
+        self.button_layout = QHBoxLayout()
+        self.apply_filter_btn = LightButton("Apply Filters")
+        self.apply_filter_btn.setMaximumWidth(120)  # Adjust button width
+        self.apply_filter_btn.clicked.connect(self.filter_alertas)
+        self.button_layout.addWidget(self.apply_filter_btn, 0, Qt.AlignCenter | Qt.AlignRight)  # Adjust alignment
+        self.clear_filter_btn = LightButton("Clear Filters")
+        self.clear_filter_btn.setMaximumWidth(120)  # Adjust button width
+        self.clear_filter_btn.clicked.connect(self.clear_filters)
+        self.button_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignCenter | Qt.AlignLeft)  # Adjust alignment
+        self.layout.addLayout(self.button_layout)
         self.setLayout(self.layout)
         self.alertas_widgets = []
+        self.carregar_alertas()
+
+        self.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #FFFFFF;
+                margin: 0px;  /* Reduce margin */
+            }
+            QComboBox {
+                font-size: 14px;
+                background-color: #D9D9D9;
+                color: #000000;
+                border: 1px solid #D9D9D9;
+                border-radius: 10px;
+                height: 25px;
+                width: 150px;
+                padding: 2px 5px;
+                margin: 0px;  /* Reduce margin */
+            }
+            QComboBox::drop-down {
+                border: none;
+                background-color: #D9D9D9;
+                margin-right: 5px;  /* Adjust margin */
+                height: 30px;
+            }
+            QComboBox::down-arrow {
+                image: url(icons/dropdown.png);
+                width: 15px;
+                height: 15px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #D9D9D9; /* Background color of the items */
+                border-radius: 10px;
+                color: #000000; /* Text color of the items */
+                padding-top: 5px;
+            }
+            QComboBox::item:!selected {
+                background-color: #D9D9D9;
+                color: #000000;
+            }
+            QHBoxLayout {
+                spacing: 0px; /* Eliminate spacing between widgets in the layout */
+                margin: 0px; /* Eliminate margin */
+            }
+        """)
+    def add_filter_row(self, label_text, combobox):
+        row_layout = QHBoxLayout()
+        label = QLabel(label_text)
+        combobox = QComboBox()
+        combobox.setEditable(True)
+        combobox.setPlaceholderText(label_text)
+        combobox.addItems([])
+        row_layout.addWidget(label)
+        row_layout.addWidget(combobox)
+        self.layout.addLayout(row_layout)
 
     def carregar_alertas(self):
-        alertas = []
+        self.alertas = []
+        devices_in_alerts = set()
+        self.device_filter.clear()
         for widget in self.alertas_widgets:
             self.layout.removeWidget(widget)
             widget.deleteLater()
@@ -661,9 +754,44 @@ class AlertasWindow(QWidget):
             with open("alertas.bin", 'rb') as file:
                 while True:
                     alerta = pickle.load(file)
-                    alertas.append(alerta)
+                    self.alertas.append(alerta)
+                    devices_in_alerts.add(alerta.get_device())
+
         except EOFError:
             pass
+        for device in devices_in_alerts:
+            if isinstance(device, int):
+                device = "Dispositivo: " + str(device)
+            self.device_filter.addItem(str(device))
+
+        self.mostrar_alertas(self.alertas)
+    def filter_alertas(self):
+        alertas = self.alertas
+        for widget in self.alertas_widgets:
+            self.layout.removeWidget(widget)
+            widget.deleteLater()
+        # Apply filters
+        device_filter_text = self.device_filter.currentText().lower()
+        object_filter_text = self.object_filter.currentText().lower()
+        order_by = self.order_filter.currentText()
+
+        if device_filter_text:
+            alertas = [alerta for alerta in alertas if str(alerta.get_device()) in device_filter_text]
+
+        if object_filter_text:
+            alertas = [alerta for alerta in alertas if object_filter_text in alerta.get_descricao()]
+
+        self.mostrar_alertas(alertas)
+
+    def clear_filters(self):
+        # Clear filter selections
+        self.device_filter.setCurrentIndex(-1)
+        self.object_filter.setCurrentIndex(-1)
+        self.order_filter.setCurrentIndex(-1)
+        # Reload original alerts
+        self.carregar_alertas()
+    def mostrar_alertas(self, alertas):
+        self.alertas_widgets = []
         for alerta in alertas:
             alerta_widget = AlertaWidget(alerta, self)
             self.alertas_widgets.append(alerta_widget)
@@ -671,7 +799,6 @@ class AlertasWindow(QWidget):
 
     def remove_alerta_widget(self, alerta_widget):
         self.alertas_widgets.remove(alerta_widget)
-
 
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None):
