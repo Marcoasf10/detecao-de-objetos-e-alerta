@@ -577,6 +577,75 @@ class DispositivosWindow(QWidget):
         del self.dispositivos_dict[device]
 
 
+class AlertaDetalhes(QMainWindow):
+    def __init__(self, frame, alerta_tempo, device, classe, timestamp):
+        super().__init__()
+
+        self.setWindowTitle("Detalhes do Alerta")
+        self.setGeometry(100, 100, 1000, 800)  # Definindo a geometria da janela
+
+        # Widget central
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        # Layout principal
+        main_layout = QVBoxLayout()
+        central_widget.setLayout(main_layout)
+
+        # Label para a imagem
+        self.image_label = QLabel()
+        height, width, channel = frame.shape
+        bytes_per_line = 3 * width
+        img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_img)
+        self.image_label.setPixmap(pixmap)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setScaledContents(True)  # Para redimensionar a imagem para o tamanho do QLabel
+        main_layout.addWidget(self.image_label, 1)  # Adicionando a imagem com mais espaço
+
+        # Layout para os detalhes
+        details_layout = QVBoxLayout()
+
+        string_tempo = self.format_alert_time(alerta_tempo)
+        self.descricao_label = QLabel(f"<b> Tempo parado: {string_tempo}     </b>")
+        self.device_label = QLabel(f"<b> Device: {device} </b>")
+        self.classe_label = QLabel(f"<b> Classe: {classe} </b>")
+        time_struct = time.localtime(timestamp)
+        data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
+        self.data_label = QLabel(f"<b> Data: {data} </b>")
+
+        details_layout.addWidget(self.descricao_label)
+        details_layout.addWidget(self.device_label)
+        details_layout.addWidget(self.classe_label)
+        details_layout.addWidget(self.data_label)
+
+        # Adicionar os detalhes abaixo da imagem
+        main_layout.addLayout(details_layout)
+
+        self.setStyleSheet("""
+            AlertaDetalhes {
+                   background-color: #292929;
+               }
+            QLabel {
+                color: #FFFFFF;
+                font-size: 20px;
+            }
+        """)
+
+    def format_alert_time(self, seconds):
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        time_str = ""
+        if hours > 0:
+            time_str += f"{int(hours)} hora(s), "
+        if minutes > 0:
+            time_str += f"{int(minutes)} minuto(s), "
+        time_str += f"{int(seconds)} segundo(s)"
+
+        return time_str
+
 class AlertaWidget(QWidget):
     def __init__(self, alerta, alerta_window):
         super().__init__()
@@ -620,6 +689,23 @@ class AlertaWidget(QWidget):
 
         self.device = alerta.get_device()
         self.classe = alerta.get_classe()
+        self.timestamp = alerta.get_date()
+        self.tempo_alerta = alerta.get_tempo_alerta()
+        self.detalhes_window = None
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.open_alerta_detalhes()
+
+    def open_alerta_detalhes(self):
+        alerta_tempo = self.alerta.get_tempo_alerta()
+        device = self.alerta.get_device()
+        classe = self.alerta.get_classe()
+        data = self.alerta.get_date()
+        imagem = self.alerta.get_photo()
+
+        self.detalhes_window = AlertaDetalhes(imagem, alerta_tempo, device, classe, data)
+        self.detalhes_window.show()
 
     def remove_button_clicked(self):
         try:
@@ -668,7 +754,7 @@ class AlertasWindow(QWidget):
         self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
         self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
-        self.order_filter.addItems(["Order by date ↑", "Order by date ↓"])
+        self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
 
         self.layout.addLayout(self.filter_layout)
 
@@ -756,14 +842,13 @@ class AlertasWindow(QWidget):
                     alerta = pickle.load(file)
                     self.alertas.append(alerta)
                     devices_in_alerts.add(alerta.get_device())
-
         except EOFError:
             pass
         for device in devices_in_alerts:
             if isinstance(device, int):
                 device = "Dispositivo: " + str(device)
             self.device_filter.addItem(str(device))
-
+        self.alertas.reverse()
         self.mostrar_alertas(self.alertas)
     def filter_alertas(self):
         alertas = self.alertas
@@ -774,7 +859,10 @@ class AlertasWindow(QWidget):
         device_filter_text = self.device_filter.currentText().lower()
         object_filter_text = self.object_filter.currentText().lower()
         order_by = self.order_filter.currentText()
-
+        if "↑" in order_by:
+            alertas.sort(key=lambda x: x.get_date())
+        else:
+            alertas.sort(key=lambda x: x.get_date(), reverse=True)
         if device_filter_text:
             alertas = [alerta for alerta in alertas if str(alerta.get_device()) in device_filter_text]
 
@@ -787,7 +875,7 @@ class AlertasWindow(QWidget):
         # Clear filter selections
         self.device_filter.setCurrentIndex(-1)
         self.object_filter.setCurrentIndex(-1)
-        self.order_filter.setCurrentIndex(-1)
+        self.order_filter.setCurrentIndex(0)
         # Reload original alerts
         self.carregar_alertas()
     def mostrar_alertas(self, alertas):

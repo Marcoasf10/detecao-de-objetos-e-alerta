@@ -131,13 +131,16 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
             if boxes:
                 for f in range(boxes.id.size):
                     id = int(boxes.id[f])
-                    if id not in alerta_tempo_start:
+                    if device not in alerta_tempo_start or id not in alerta_tempo_start[device]:
                         with alerta_tempo_start_lock:
-                            if id not in alerta_tempo_start:
-                                alerta_tempo_start[id] = {}
-                                alerta_tempo_start[id][device] = {}
+                            if device not in alerta_tempo_start:
+                                alerta_tempo_start[device] = {}
+                            if id not in alerta_tempo_start[device]:
+                                alerta_tempo_start[device][id] = {}
                             for classe, tempo in lista_alertas.items():
-                                alerta_tempo_start[id][device][classe] = time.time()
+                                alerta_tempo_start[device][id][classe] = time.time()
+                    if classe not in alerta_tempo_start[device][id]:
+                        alerta_tempo_start[device][id][classe] = time.time()
                     x1, y1, x2, y2 = boxes.xyxy[f]
                     if id not in canto1Mapper and id not in canto2Mapper:
                         canto1Mapper[id] = (x1, y1, -1)
@@ -150,20 +153,21 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                     if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
                         print(f"ID: {int(id)} -> Parado")
                         with alert_time_lock:
-                            print(alert_time_dict[device])
                             tempo_alerta = alert_time_dict[device][classe_obj]
                         with alerta_tempo_start_lock:
-                            tempo_last = alerta_tempo_start[id][device][classe_obj]
+                            tempo_last = alerta_tempo_start[device][id][classe_obj]
                         if time.time() - tempo_last >= tempo_alerta != 0:
                             with alerta_tempo_start_lock:
-                                alerta_tempo_start[id][device][classe_obj] = time.time()
-                            descricao = f'O objeto: {classe_obj} está parado á 10 segundos'
+                                alerta_tempo_start[device][id][classe_obj] = time.time()
+                            time_struct = time.localtime(time.time())
+                            formatted_time = time.strftime('%d/%m/%Y', time_struct)
+                            descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á 10 segundos'
                             print("Gerado ALERTA!")
-                            alerta = Alerta(device, classe_obj, descricao, frame)
+                            alerta = Alerta(device, classe_obj, descricao, frame, time.time(), tempo_alerta)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
-                        alerta_tempo_start[id][device][classe_obj] = time.time()
+                        alerta_tempo_start[device][id][classe_obj] = time.time()
                         print(f"ID: {int(id)} -> Mover")
         i += 1
         while time.time() - start_time_predict <= delay:
@@ -237,11 +241,13 @@ def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
 
 class Alerta:
-    def __init__(self, device, classe, descricao, photo):
+    def __init__(self, device, classe, descricao, photo, date, tempo_alerta):
         self.device = device
         self.classe = classe
         self.descricao = descricao
         self.photo = photo
+        self.date = date
+        self.tempo_alerta = tempo_alerta
 
     def get_device(self):
         return self.device
@@ -254,5 +260,11 @@ class Alerta:
 
     def get_photo(self):
         return self.photo
+
+    def get_date(self):
+        return self.date
+
+    def get_tempo_alerta(self):
+        return self.tempo_alerta
 
 
