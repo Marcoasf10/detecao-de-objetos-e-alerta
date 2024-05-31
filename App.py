@@ -608,7 +608,7 @@ class AlertaDetalhes(QMainWindow):
         details_layout = QVBoxLayout()
 
         string_tempo = self.format_alert_time(alerta_tempo)
-        self.descricao_label = QLabel(f"<b> Tempo parado: {string_tempo}     </b>")
+        self.descricao_label = QLabel(f"<b> Tempo parado: {string_tempo}</b>")
         self.device_label = QLabel(f"<b> Device: {device} </b>")
         self.classe_label = QLabel(f"<b> Classe: {classe} </b>")
         time_struct = time.localtime(timestamp)
@@ -735,7 +735,22 @@ class AlertasWindow(QWidget):
         self.setGeometry(100, 100, 600, 400)  # Definindo a geometria da janela
         self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignTop)
-        # Filters layout
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setStyleSheet("""
+                                   QScrollArea {
+                                       background-color: #FFFFFF; /* Set background color to white */
+                                       border-radius: 10px; /* Set border radius to 10px for rounded corners */
+                                   }
+                               """)
+
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("background-color: transparent;")
+        self.scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_widget)  # Definindo um layout QVBoxLayout para a área de rolagem
+        self.scroll_layout.setAlignment(Qt.AlignTop)
+        self.scroll_area.setWidget(self.scroll_widget)# Filters layout
+
+
         self.filter_layout = QHBoxLayout()
         self.device_filter = QComboBox()
         self.label_device = QLabel("Device: ")
@@ -770,10 +785,10 @@ class AlertasWindow(QWidget):
         self.clear_filter_btn.clicked.connect(self.clear_filters)
         self.button_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignCenter | Qt.AlignLeft)  # Adjust alignment
         self.layout.addLayout(self.button_layout)
-        self.setLayout(self.layout)
         self.alertas_widgets = []
+        self.layout.addWidget(self.scroll_area)
         self.carregar_alertas()
-
+        self.setLayout(self.layout)
         self.setStyleSheet("""
             QLabel {
                 font-size: 14px;
@@ -883,7 +898,7 @@ class AlertasWindow(QWidget):
         for alerta in alertas:
             alerta_widget = AlertaWidget(alerta, self)
             self.alertas_widgets.append(alerta_widget)
-            self.layout.addWidget(alerta_widget)
+            self.scroll_layout.addWidget(alerta_widget)
 
     def remove_alerta_widget(self, alerta_widget):
         self.alertas_widgets.remove(alerta_widget)
