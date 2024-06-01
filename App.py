@@ -335,7 +335,7 @@ class DispositivoWidget(QWidget):
         return frame_with_icon
 
     def expand_button_clicked(self):
-        self.image_window = ImageWindow(self.image_label.pixmap().scaledToWidth(800), self)
+        self.image_window = ImageWindow(self.image_label.pixmap().scaledToWidth(800), self, self.device)
         self.image_window.show()
 
     def setting_button_clicked(self):
@@ -904,11 +904,11 @@ class AlertasWindow(QWidget):
         self.alertas_widgets.remove(alerta_widget)
 
 class ImageWindow(QMainWindow):
-    def __init__(self, pixmap, parent=None):
+    def __init__(self, pixmap, parent=None, device=""):
         super().__init__()
         self.setWindowIcon(QIcon('icons/icon.png'))
         self.dispositivo_widget = parent
-        self.setWindowTitle("Image Window")
+        self.setWindowTitle(f'Imagem do Dispositivo {device}')
         self.setGeometry(0, 0, 800, 600)
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
