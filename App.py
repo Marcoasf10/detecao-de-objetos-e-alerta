@@ -69,66 +69,124 @@ class MosaicoLayout(QWidget):
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('Spash Screen Example')
+        self.setWindowTitle('Splash Screen')
         self.setFixedSize(1100, 500)
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
         self.counter = 0
-        self.n = 50
+        self.n = 70
 
         self.initUI()
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.loading)
-        self.timer.start(30)
+        self.timer.start(20)
 
     def initUI(self):
         layout = QVBoxLayout()
         self.setLayout(layout)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.frame = QFrame()
+        self.frame.setObjectName("frame")
         layout.addWidget(self.frame)
 
+        frame_layout = QVBoxLayout()
+        frame_layout.setSpacing(0)
+        frame_layout.setContentsMargins(0, 0, 0, 0)
+        self.frame.setLayout(frame_layout)
+
+        # Create a horizontal layout for the image and title
+        title_layout = QVBoxLayout()
+
+        # QLabel for the image
+        self.image_label = QLabel(self.frame)
+        pixmap = QPixmap('icons/iconBranco.png')
+        self.image_label.setPixmap(pixmap)
+        self.image_label.setFixedSize(100, 100)  # Set the size of the image
+        self.image_label.setScaledContents(True)  # Scale image to fit the QLabel
+        # QLabel for the title
         self.labelTitle = QLabel(self.frame)
         self.labelTitle.setObjectName('LabelTitle')
+        self.labelTitle.setText('SafeSight')
+        self.labelTitle.setAlignment(Qt.AlignLeft)
 
-        # center labels
-        self.labelTitle.resize(self.width() - 10, 150)
-        self.labelTitle.move(0, 40)  # x, y
-        self.labelTitle.setText('Splash Screen')
-        self.labelTitle.setAlignment(Qt.AlignCenter)
+
+        # Add the image and title to the horizontal layout
+        title_layout.addWidget(self.image_label, 0, Qt.AlignCenter)
+        title_layout.addWidget(self.labelTitle, 0, Qt.AlignCenter)
+
+        # Add the title layout to the frame layout
+        frame_layout.addLayout(title_layout)
 
         self.labelDescription = QLabel(self.frame)
-        self.labelDescription.resize(self.width() - 10, 50)
-        self.labelDescription.move(0, self.labelTitle.height())
         self.labelDescription.setObjectName('LabelDesc')
-        self.labelDescription.setText('<strong>Working on Task #1</strong>')
+        self.labelDescription.setText('<strong>A carregar os dispositivos</strong>')
         self.labelDescription.setAlignment(Qt.AlignCenter)
+        frame_layout.addWidget(self.labelDescription)
 
         self.progressBar = QProgressBar(self.frame)
-        self.progressBar.resize(self.width() - 200 - 10, 50)
-        self.progressBar.move(100, self.labelDescription.y() + 130)
         self.progressBar.setAlignment(Qt.AlignCenter)
         self.progressBar.setFormat('%p%')
         self.progressBar.setTextVisible(True)
         self.progressBar.setRange(0, self.n)
-        self.progressBar.setValue(20)
+        self.progressBar.setValue(0)
+        frame_layout.addWidget(self.progressBar)
 
         self.labelLoading = QLabel(self.frame)
-        self.labelLoading.resize(self.width() - 10, 50)
-        self.labelLoading.move(0, self.progressBar.y() + 70)
         self.labelLoading.setObjectName('LabelLoading')
         self.labelLoading.setAlignment(Qt.AlignCenter)
         self.labelLoading.setText('loading...')
+        frame_layout.addWidget(self.labelLoading)
+
+        # Apply stylesheet
+        self.setStyleSheet("""
+                #LabelTitle {
+                   margin-bottom: 20px; 
+                   font-size: 60px;
+                   color: #ffffff;
+                }
+
+                #LabelDesc {
+                   font-size: 30px;
+                   color: #ffffff;
+                }
+
+                #LabelLoading {
+                   font-size: 30px;
+                   color: #ffffff;
+                }
+
+                QProgressBar {
+                   background-color: #ffffff;
+                   color: #000000;
+                   border-style: none;
+                   border-radius: 10px;
+                   text-align: center;
+                   font-size: 30px;
+               }
+
+               QProgressBar::chunk {
+                   border-radius: 10px;
+                   background-color: #D9D9D9;
+               }
+                #frame {
+                    border-radius: 15px;
+                    background-color: #292929;
+                    color: #fffff;
+                    padding: 40px 10px 30px 10px;
+                }
+        """)
 
     def loading(self):
         self.progressBar.setValue(self.counter)
 
         if self.counter == int(self.n * 0.3):
-            self.labelDescription.setText('<strong>Working on Task #2</strong>')
+            self.labelDescription.setText('<strong>A carregar os alertas</strong>')
         elif self.counter == int(self.n * 0.6):
-            self.labelDescription.setText('<strong>Working on Task #3</strong>')
+            self.labelDescription.setText('<strong>A carregar o YOLO</strong>')
         elif self.counter >= self.n:
             self.timer.stop()
             self.close()
@@ -139,7 +197,6 @@ class SplashScreen(QWidget):
             self.myApp.show()
 
         self.counter += 1
-
 
 class LightButton(QPushButton):
     def __init__(self, text="", parent=None):
@@ -581,10 +638,11 @@ class DispositivosWindow(QWidget):
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/icon.png'))
+        self.setWindowIcon(QIcon('icons/iconBranco.png'))
         self.setWindowTitle("Detalhes do Alerta")
         # Set the window size and position to be centered
         self.setGeometry(100, 100, 800, 600)
+        self.resize(800, 600)
         # Widget central
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -907,7 +965,7 @@ class AlertasWindow(QWidget):
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None, device=""):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/icon.png'))
+        self.setWindowIcon(QIcon('icons/iconBranco.png'))
         self.dispositivo_widget = parent
         self.setWindowTitle(f'Imagem do Dispositivo {device}')
         self.setGeometry(0, 0, 800, 600)
@@ -1065,7 +1123,7 @@ class ConfigurarDispositivo(QDialog):
         if objToFind is None:
             objToFind = []
         super().__init__()
-        self.setWindowIcon(QIcon('icons/icon.png'))
+        self.setWindowIcon(QIcon('icons/iconBranco.png'))
         self.setStyleSheet("""
                        ConfigurarDispositivo {
                            background-color: #5B5B5B;
@@ -1435,7 +1493,7 @@ class ConfigurarDispositivo(QDialog):
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/icon.png'))
+        self.setWindowIcon(QIcon('icons/iconBranco.png'))
         self.setWindowTitle("Object Detection")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
@@ -1520,11 +1578,9 @@ if __name__ == '__main__':
                    font-size: 30px;
                    color: #ffffff;
                }
-
                QFrame {
                    background-color: #292929;
                    color: #fffff;
-                   border-radius: 10px;
                }
 
                QProgressBar {
