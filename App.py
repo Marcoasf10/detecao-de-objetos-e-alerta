@@ -580,7 +580,7 @@ class DispositivosWindow(QWidget):
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
-
+        self.setWindowIcon(QIcon('icons/icon.png'))
         self.setWindowTitle("Detalhes do Alerta")
         self.setGeometry(100, 100, 1000, 800)  # Definindo a geometria da janela
 
@@ -906,6 +906,7 @@ class AlertasWindow(QWidget):
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None):
         super().__init__()
+        self.setWindowIcon(QIcon('icons/icon.png'))
         self.dispositivo_widget = parent
         self.setWindowTitle("Image Window")
         self.setGeometry(0, 0, 800, 600)
@@ -1063,7 +1064,7 @@ class ConfigurarDispositivo(QDialog):
         if objToFind is None:
             objToFind = []
         super().__init__()
-        print("time_frame", time_frame)
+        self.setWindowIcon(QIcon('icons/icon.png'))
         self.setStyleSheet("""
                        ConfigurarDispositivo {
                            background-color: #5B5B5B;
@@ -1433,6 +1434,7 @@ class ConfigurarDispositivo(QDialog):
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.setWindowIcon(QIcon('icons/icon.png'))
         self.setWindowTitle("Object Detection")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
