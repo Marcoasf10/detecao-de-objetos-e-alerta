@@ -131,6 +131,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
             if boxes:
                 for f in range(boxes.id.size):
                     id = int(boxes.id[f])
+                    classe_obj = local_model.names[boxes.cls[f]]
                     if device not in alerta_tempo_start or id not in alerta_tempo_start[device]:
                         with alerta_tempo_start_lock:
                             if device not in alerta_tempo_start:
@@ -139,21 +140,23 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                                 alerta_tempo_start[device][id] = {}
                             for classe, tempo in lista_alertas.items():
                                 alerta_tempo_start[device][id][classe] = time.time()
-                    if classe not in alerta_tempo_start[device][id]:
-                        alerta_tempo_start[device][id][classe] = time.time()
+                    if classe_obj not in alerta_tempo_start[device][id]:
+                        alerta_tempo_start[device][id][classe_obj] = time.time()
                     x1, y1, x2, y2 = boxes.xyxy[f]
                     if id not in canto1Mapper and id not in canto2Mapper:
                         canto1Mapper[id] = (x1, y1, -1)
                         canto2Mapper[id] = (x2, y2, -1)
                     canto1Mapper[id] = (x1, y1, distance(canto1Mapper[id][0], x1, canto1Mapper[id][1], y1))
                     canto2Mapper[id] = (x2, y2, distance(canto2Mapper[id][0], x2, canto2Mapper[id][1], y2))
-                    classe_obj = local_model.names[boxes.cls[f]]
                     if canto1Mapper[id][2] == -1 and canto2Mapper[id][2] == -1:
                         continue
                     if canto1Mapper[id][2] <= margem and canto2Mapper[id][2] <= margem:
                         print(f"ID: {int(id)} -> Parado")
                         with alert_time_lock:
-                            tempo_alerta = alert_time_dict[device][classe_obj]
+                            if classe_obj in alert_time_dict[device]:
+                                tempo_alerta = alert_time_dict[device][classe_obj]
+                            else:
+                                continue
                         with alerta_tempo_start_lock:
                             tempo_last = alerta_tempo_start[device][id][classe_obj]
                         if time.time() - tempo_last >= tempo_alerta != 0:

@@ -8,7 +8,8 @@ from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
-    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem
+    QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
+    QDesktopWidget
 from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
@@ -582,8 +583,8 @@ class AlertaDetalhes(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon('icons/icon.png'))
         self.setWindowTitle("Detalhes do Alerta")
-        self.setGeometry(100, 100, 1000, 800)  # Definindo a geometria da janela
-
+        # Set the window size and position to be centered
+        self.setGeometry(100, 100, 800, 600)
         # Widget central
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
