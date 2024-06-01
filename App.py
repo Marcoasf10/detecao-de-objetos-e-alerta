@@ -19,17 +19,46 @@ all_dispositivos_widget = []
 global_devices = []
 
 
+class CustomScrollArea(QScrollArea):
+    def __init__(self):
+        super().__init__()
+        self.verticalScrollBar().setStyleSheet("""
+            QScrollBar:vertical {
+                width: 15px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #5B5B5B;
+                border-radius: 7px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: #292929; /* Background color of the track */
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        self.horizontalScrollBar().setStyleSheet("""
+            QScrollBar:horizontal {
+                height: 15px;
+            }
+            QScrollBar::handle:horizontal {
+                background-color: #5B5B5B;
+                border-radius: 7px;
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: #292929; /* Background color of the track */
+            }
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                width: 0px;
+            }
+        """)
+
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
         self.layout = QHBoxLayout(self)
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setStyleSheet("""
-                                   QScrollArea {
-                                       background-color: #FFFFFF; /* Set background color to white */
-                                       border-radius: 10px; /* Set border radius to 10px for rounded corners */
-                                   }
-                               """)
+        self.scroll_area = CustomScrollArea()
 
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setStyleSheet("background-color: transparent;")
@@ -814,13 +843,21 @@ class AlertasWindow(QWidget):
         self.layout = QVBoxLayout()
         self.layout.setAlignment(Qt.AlignTop)
         self.scroll_area = QScrollArea()
-        self.scroll_area.setStyleSheet("""
-                                   QScrollArea {
-                                       background-color: #FFFFFF; /* Set background color to white */
-                                       border-radius: 10px; /* Set border radius to 10px for rounded corners */
-                                   }
-                               """)
-
+        self.scroll_area.verticalScrollBar().setStyleSheet("""
+                    QScrollBar:vertical {
+                        width: 15px;
+                    }
+                    QScrollBar::handle:vertical {
+                        background-color: #5B5B5B;
+                        border-radius: 7px;
+                    }
+                    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                        background: #292929; /* Background color of the track */
+                    }
+                    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                        height: 0px;
+                    }
+                """)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setStyleSheet("background-color: transparent;")
         self.scroll_widget = QWidget()
