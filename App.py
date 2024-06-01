@@ -5,7 +5,7 @@ from threading import Thread
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
@@ -731,9 +731,9 @@ class AlertaWidget(QWidget):
         main_layout.addLayout(self.item_layout)
 
         # Adiciona o texto à esquerda
-        texto_esquerda = QLabel(alerta.get_descricao())
-        texto_esquerda.setStyleSheet("font-size: 16px; color: #FFFFFF")
-        self.item_layout.addWidget(texto_esquerda)
+        self.texto_esquerda = QLabel(alerta.get_descricao())
+        self.texto_esquerda.setStyleSheet("font-size: 16px; color: #FFFFFF")
+        self.item_layout.addWidget(self.texto_esquerda)
 
         # Adiciona a imagem à direita
         imagem_direita = QLabel()
@@ -752,9 +752,28 @@ class AlertaWidget(QWidget):
         self.tempo_alerta = alerta.get_tempo_alerta()
         self.detalhes_window = None
 
+        # Set initial background color
+        self.setStyleSheet("background-color: #292929;")
+
+    def enterEvent(self, event):
+        self.setStyleSheet("background-color: #1f1f1f;")
+        self.setCursor(Qt.PointingHandCursor)
+
+    def leaveEvent(self, event):
+        self.setStyleSheet("background-color: #292929;")
+        self.setCursor(Qt.ArrowCursor)
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.open_alerta_detalhes()
+
+    def paintEvent(self, event):
+        # Call the base class paintEvent to ensure standard painting behavior
+        super().paintEvent(event)
+
+        # Set the background color for AlertaWidget
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), self.palette().color(QPalette.Background))
 
     def open_alerta_detalhes(self):
         alerta_tempo = self.alerta.get_tempo_alerta()
