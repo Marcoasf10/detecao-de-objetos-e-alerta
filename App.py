@@ -1,3 +1,4 @@
+import json
 import time
 from multiprocessing import Queue
 from threading import Thread
@@ -9,7 +10,7 @@ from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
-    QDesktopWidget
+    QDesktopWidget, QMenuBar, QAction, QFileDialog
 from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
@@ -153,6 +154,8 @@ class SplashScreen(QWidget):
         self.labelDescription = QLabel(self.frame)
         self.labelDescription.setObjectName('LabelDesc')
         self.labelDescription.setText('<strong>A carregar os dispositivos</strong>')
+        listar_thread = ListarThread(self)
+        listar_thread.start()
         self.labelDescription.setAlignment(Qt.AlignCenter)
         frame_layout.addWidget(self.labelDescription)
 
@@ -517,6 +520,18 @@ class DispositivoWidget(QWidget):
     def handle_close_image_window(self):
         self.image_window = None
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "device": self.device,
+            "objs": self.objToFind,
+            "alerts": self.lista_alertas
+        }
+
+    @staticmethod
+    def from_dict(data):
+        return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"])
+
 
 class StyledScrollBar(QScrollBar):
     def __init__(self, *args, **kwargs):
@@ -662,6 +677,19 @@ class DispositivosWindow(QWidget):
 
     def remove_device(self, device):
         del self.dispositivos_dict[device]
+
+    def to_dict(self):
+        global all_dispositivos_widget
+        devices = []
+        for widget in all_dispositivos_widget:
+            devices.append(widget.to_dict())
+        return {"devices": devices}
+
+    def from_dict(self, data):
+        global all_dispositivos_widget
+        all_dispositivos_widget.clear()
+        for device_data in data.get("devices", []):
+            self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
 
 
 class AlertaDetalhes(QMainWindow):
@@ -1553,25 +1581,70 @@ class MainWindow(QWidget):
         self.setWindowTitle("Object Detection")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
-               MainWindow {
+                QMenuBar {
+                    background-color: #1c1c1c;
+                    color: white;
+                }
+                QMenuBar::item {
+                    background-color: #1c1c1c;
+                    color: white;
+                }
+                QMenuBar::item:selected {
+                    background-color: #373737;
+                }
+                QMenu {
+                    background-color: #1c1c1c;
+                    color: white;
+                }
+                QMenu::item {
+                    background-color: #1c1c1c;
+                    color: white;
+                }
+                QMenu::item:selected {
+                    background-color: #373737;
+                }
+                MainWindow {
                    background-color: #292929;
-               }
-               QPushButton {
+                }
+                QPushButton {
                    border: none;
                    font-size: 16px;
                    padding: 10px;
                    color: #FFFFFF;
                    margin: 0px;
-               }
-               #dark_button {
+                }
+                #dark_button {
                    background-color: #292929;
-               }
-               #light_button {
+                }
+                #light_button {
                    background-color: #5B5B5B;
-               }
+                }
            """)
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Adicionando a barra de menu
+        self.menu_bar = QMenuBar(self)
+        file_menu = self.menu_bar.addMenu('File')
+        edit_menu = self.menu_bar.addMenu('Edit')
+        help_menu = self.menu_bar.addMenu('Help')
+
+        # Adicionando ações ao menu File
+        open_action = QAction('Open', self)
+        open_action.triggered.connect(self.open_files)
+        save_action = QAction('Save', self)
+        save_action.triggered.connect(self.save_files)
+        save_as_action = QAction('Save as', self)
+        save_as_action.triggered.connect(self.save_as_files)
+        exit_action = QAction('Exit', self)
+        exit_action.triggered.connect(self.close)
+
+        file_menu.addAction(open_action)
+        file_menu.addAction(save_action)
+        file_menu.addAction(save_as_action)
+        file_menu.addAction(exit_action)
+
+        main_layout.setMenuBar(self.menu_bar)
 
         # Layout horizontal para os botões, centralizando-os horizontalmente
         self.button_layout = QHBoxLayout()
@@ -1596,6 +1669,7 @@ class MainWindow(QWidget):
         self.stacked_layout.addWidget(self.dispositivos_window)
         self.stacked_layout.addWidget(self.alertas_window)
         main_layout.addLayout(self.stacked_layout)
+        self.file_name = None
 
         # Definindo a página inicial como Dispositivos
         self.show_dispositivos()
@@ -1613,6 +1687,33 @@ class MainWindow(QWidget):
         self.dispositivos_button.setStyleSheet(
             "background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
         self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
+
+    def open_files(self):
+        global all_dispositivos_widget
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
+        for widget in all_dispositivos_widget:
+            widget.remove_button_clicked()
+        if file_name:
+            with open(file_name, 'r') as file:
+                data = json.load(file)
+                try:
+                    self.dispositivos_window.from_dict(data)
+                    self.file_name = file_name
+                except:
+                    QMessageBox.critical(self, "Erro", "Erro ao carregar os dispositivos do ficheiro")
+
+    def save_files(self):
+        if self.file_name:
+            with open(self.file_name, 'w') as file:
+                json.dump(self.dispositivos_window.to_dict(), file)
+        else:
+            self.save_as_files()
+
+    def save_as_files(self):
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", "JSON Files (*.json);;All Files (*)")
+        if file_name:
+            with open(file_name, 'w') as file:
+                json.dump(self.dispositivos_window.to_dict(), file)
 
 
 if __name__ == '__main__':
