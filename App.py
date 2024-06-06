@@ -443,9 +443,9 @@ class DispositivoWidget(QWidget):
         self.label.setText(name)
         self.objToFind = selected_items
         if device.isdigit():
-            deviceInt = int(device)
+            device = int(device)
         self.lista_alertas = lista_alertas
-        yoloScript.update_obj_to_find(deviceInt, self.objToFind, self.lista_alertas)
+        yoloScript.update_obj_to_find(device, self.objToFind, self.lista_alertas)
 
     def update_image(self, frame):
         if self.pause:
@@ -1397,7 +1397,7 @@ class ConfigurarDispositivo(QDialog):
         if device != "":
             self.nomeLineEdit.setText(name)
             print("device", device)
-            if str(device)[:4] == "http" or device == "rtsp":
+            if "http" in str(device) or "rtsp" in str(device):
                 self.checkBox_IP.setChecked(True)
                 self.ip_line_edit.setText(device)
                 self.ip_line_edit.setEnabled(False)
