@@ -1,3 +1,4 @@
+import hashlib
 import json
 import time
 from multiprocessing import Queue
@@ -1670,6 +1671,7 @@ class MainWindow(QWidget):
         self.stacked_layout.addWidget(self.alertas_window)
         main_layout.addLayout(self.stacked_layout)
         self.file_name = None
+        self.devices_hash = None
 
         # Definindo a página inicial como Dispositivos
         self.show_dispositivos()
@@ -1699,6 +1701,7 @@ class MainWindow(QWidget):
                 try:
                     self.dispositivos_window.from_dict(data)
                     self.file_name = file_name
+                    self.devices_hash = self.hash_dict(self.dispositivos_window.to_dict())
                 except:
                     QMessageBox.critical(self, "Erro", "Erro ao carregar os dispositivos do ficheiro")
 
@@ -1715,6 +1718,72 @@ class MainWindow(QWidget):
             with open(file_name, 'w') as file:
                 json.dump(self.dispositivos_window.to_dict(), file)
 
+    def closeEvent(self, event):
+        if len(all_dispositivos_widget) > 0 and  (self.file_name == None or self.devices_hash != self.hash_dict(self.dispositivos_window.to_dict())):
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setWindowTitle("Message")
+            if self.file_name == None:
+                msg_box.setText("Do you want to save changes?")
+            else:
+                msg_box.setText("Do you want to save changes to " + self.file_name + "?")
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            msg_box.setStyleSheet("""
+                            QMessageBox {
+                                background-color: #4e4e4e; /* Light background color */
+                            }
+                            QMessageBox QLabel {
+                                color: white;
+                            }
+                            QAbstractButton {
+                                background-color: #292929; /* Darker color for buttons */
+                                color: white;
+                                border-radius: 10px; /* Rounded borders */
+                                padding: 5px 10px;
+                            }
+                            QAbstractButton:hover {
+                                background-color: #3d3d3d; /* Slightly lighter on hover */
+                            }
+                            StandardButton {
+                                background-color: #292929; /* Darker color for buttons */
+                                color: white;
+                                border-radius: 10px; /* Rounded borders */
+                                padding: 5px 10px;
+                            }
+                            StandardButton:hover {
+                                background-color: #3d3d3d;
+                            }
+                            QPushButton {
+                                background-color: #292929;
+                                color: white;
+                                border-radius: 10px;
+                                padding: 5px 10px;
+                            }
+                            QPushButton:hover {
+                                background-color: #3d3d3d;
+                            }
+                                
+                        """)
+
+            reply = msg_box.exec()
+            if reply == QMessageBox.Yes:
+                if self.file_name == None:
+                    self.save_as_files()
+                    if self.file_name != None:
+                        event.ignore()
+                    event.accept()
+                else:
+                    self.save_files()
+                    event.accept()
+            elif reply == QMessageBox.Cancel:
+                event.ignore()
+            elif reply == QMessageBox.No:
+                event.accept()
+
+    def hash_dict(self, d):
+        dict_str = json.dumps(d, sort_keys=True)
+        hash_obj = hashlib.sha256(dict_str.encode())
+        return hash_obj.hexdigest()
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
