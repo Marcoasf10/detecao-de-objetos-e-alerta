@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+import sys
 import time
 from multiprocessing import Queue
 from threading import Thread
@@ -1726,7 +1728,7 @@ class MainWindow(QWidget):
             if self.file_name == None:
                 msg_box.setText("Do you want to save changes?")
             else:
-                msg_box.setText("Do you want to save changes to " + self.file_name + "?")
+                msg_box.setText("Do you want to save changes to " + os.path.basename(self.file_name) + "?")
             msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
             msg_box.setStyleSheet("""
                             QMessageBox {
@@ -1771,6 +1773,8 @@ class MainWindow(QWidget):
                     self.save_as_files()
                     if self.file_name != None:
                         event.ignore()
+                    for widget in all_dispositivos_widget:
+                        widget.remove_button_clicked()
                     event.accept()
                 else:
                     self.save_files()
@@ -1778,8 +1782,13 @@ class MainWindow(QWidget):
             elif reply == QMessageBox.Cancel:
                 event.ignore()
             elif reply == QMessageBox.No:
+                for widget in all_dispositivos_widget:
+                    widget.remove_button_clicked()
                 event.accept()
-
+        elif self.file_name != None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
+            for widget in all_dispositivos_widget:
+                widget.remove_button_clicked()
+            event.accept()
     def hash_dict(self, d):
         dict_str = json.dumps(d, sort_keys=True)
         hash_obj = hashlib.sha256(dict_str.encode())
@@ -1826,3 +1835,4 @@ if __name__ == '__main__':
     window.show()
     app.exec_()
     print('Closing Window...')
+    sys.exit()
