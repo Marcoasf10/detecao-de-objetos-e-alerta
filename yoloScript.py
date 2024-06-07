@@ -39,6 +39,7 @@ def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
     thread.start()
     thread.join()
     cv2.destroyAllWindows()
+    queue.put(-1)
 
 
 def distance(x1, x2, y1, y2):

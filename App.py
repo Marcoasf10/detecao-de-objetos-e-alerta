@@ -58,6 +58,7 @@ class CustomScrollArea(QScrollArea):
             }
         """)
 
+
 class HorizontalLayout(QWidget):
     def __init__(self):
         super().__init__()
@@ -146,7 +147,6 @@ class SplashScreen(QWidget):
         self.labelTitle.setText('SafeSight')
         self.labelTitle.setAlignment(Qt.AlignLeft)
 
-
         # Add the image and title to the horizontal layout
         title_layout.addWidget(self.image_label, 0, Qt.AlignCenter)
         title_layout.addWidget(self.labelTitle, 0, Qt.AlignCenter)
@@ -232,6 +232,7 @@ class SplashScreen(QWidget):
             self.myApp.show()
 
         self.counter += 1
+
 
 class LightButton(QPushButton):
     def __init__(self, text="", parent=None):
@@ -574,6 +575,7 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton = LightButton()
         self.mosaicoButton.setIcon(QIcon("icons/mosaico_2.png"))
         self.mosaicoButton.clicked.connect(self.layout_mosaico)
+        self.threads = []
 
         self.horizontalbutton = LightButton()
         self.horizontalbutton.setIcon(QIcon("icons/mosaico.png"))
@@ -607,6 +609,7 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setEnabled(True)
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
+        self.read_queue = True
 
     def layout_mosaico(self):
         global all_dispositivos_widget
@@ -638,20 +641,24 @@ class DispositivosWindow(QWidget):
             self.mosaico_layout.addWidget(dispositivo_widget)
         if self.stacked_layout.currentIndex() == 0:
             self.horizontal_layout.addWidget(dispositivo_widget)
-        Thread(target=self.runscript_thread, args=(device, objToFind, lista_alertas)).start()
+        thread = Thread(target=self.runscript_thread, args=(device, objToFind, lista_alertas))
+        thread.start()
+        self.threads.append(thread)
         if not self.reading:
-            Thread(target=self.readQueue).start()
+            thread = Thread(target=self.readQueue)
+            thread.start()
+            self.threads.append(thread)
             self.reading = True
 
     def runscript_thread(self, device, objToFind, alertas_dict):
         yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10)
 
     def readQueue(self):
-        while True:
+        while self.read_queue:
             try:
                 frames = self.queue.get()
                 if frames == -1:
-                    self.timer.stop()
+                    break
                 for device, frame in frames.items():
                     if device in self.dispositivos_dict.keys():
                         self.dispositivos_dict[device].update_image(frame)
@@ -661,8 +668,6 @@ class DispositivosWindow(QWidget):
                 print("Queue is empty.")
             except Exception as e:
                 print(f"Error reading queue: {e}")
-
-            time.sleep(0.5)
 
     def open_device_ip_window(self):
         self.device_ip_window = ConfigurarDispositivo(dispositivos_dict=self.dispositivos_dict)
@@ -693,7 +698,6 @@ class DispositivosWindow(QWidget):
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
             self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
-
 
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
@@ -773,6 +777,7 @@ class AlertaDetalhes(QMainWindow):
             time_str = f'{int(seconds)} segundos'
 
         return time_str
+
 
 class AlertaWidget(QWidget):
     def __init__(self, alerta, alerta_window):
@@ -874,6 +879,7 @@ class AlertaWidget(QWidget):
         self.setParent(None)
         self.deleteLater()
 
+
 class AlertasWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -903,8 +909,7 @@ class AlertasWindow(QWidget):
         self.scroll_widget = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_widget)  # Definindo um layout QVBoxLayout para a área de rolagem
         self.scroll_layout.setAlignment(Qt.AlignTop)
-        self.scroll_area.setWidget(self.scroll_widget)# Filters layout
-
+        self.scroll_area.setWidget(self.scroll_widget)  # Filters layout
 
         self.filter_layout = QHBoxLayout()
         self.device_filter = QComboBox()
@@ -917,7 +922,7 @@ class AlertasWindow(QWidget):
         self.object_filter.setPlaceholderText("Filter by object")
         self.label_ordem = QLabel("Order by: ")
         self.order_filter = QComboBox()
-        self.filter_layout.addWidget(self.label_device, 0 , Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.label_device, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.device_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_object, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.object_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
@@ -987,6 +992,7 @@ class AlertasWindow(QWidget):
                 margin: 0px; /* Eliminate margin */
             }
         """)
+
     def add_filter_row(self, label_text, combobox):
         row_layout = QHBoxLayout()
         label = QLabel(label_text)
@@ -1020,6 +1026,7 @@ class AlertasWindow(QWidget):
             self.device_filter.addItem(str(device))
         self.alertas.reverse()
         self.mostrar_alertas(self.alertas)
+
     def filter_alertas(self):
         alertas = self.alertas
         for widget in self.alertas_widgets:
@@ -1048,6 +1055,7 @@ class AlertasWindow(QWidget):
         self.order_filter.setCurrentIndex(0)
         # Reload original alerts
         self.carregar_alertas()
+
     def mostrar_alertas(self, alertas):
         self.alertas_widgets = []
         for alerta in alertas:
@@ -1057,6 +1065,7 @@ class AlertasWindow(QWidget):
 
     def remove_alerta_widget(self, alerta_widget):
         self.alertas_widgets.remove(alerta_widget)
+
 
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None, device=""):
@@ -1564,7 +1573,7 @@ class ConfigurarDispositivo(QDialog):
             for device in devices:
                 self.device_combo_box.addItem(f"Dispositivo {device}", device)
             self.device_combo_box.setCurrentIndex(0)
-        if (has_dispositivos):
+        if has_dispositivos:
             self.label_procura_dispositivo.hide()
             self.atualizar_dispositivos_button.setEnabled(True)
 
@@ -1730,11 +1739,12 @@ class MainWindow(QWidget):
                 json.dump(self.dispositivos_window.to_dict(), file)
 
     def closeEvent(self, event):
-        if len(all_dispositivos_widget) > 0 and  (self.file_name == None or self.devices_hash != self.hash_dict(self.dispositivos_window.to_dict())):
+        if len(all_dispositivos_widget) > 0 and (
+                self.file_name is None or self.devices_hash != self.hash_dict(self.dispositivos_window.to_dict())):
             msg_box = QMessageBox(self)
             msg_box.setIcon(QMessageBox.Question)
             msg_box.setWindowTitle("Message")
-            if self.file_name == None:
+            if self.file_name is None:
                 msg_box.setText("Do you want to save changes?")
             else:
                 msg_box.setText("Do you want to save changes to " + os.path.basename(self.file_name) + "?")
@@ -1778,9 +1788,9 @@ class MainWindow(QWidget):
 
             reply = msg_box.exec()
             if reply == QMessageBox.Yes:
-                if self.file_name == None:
+                if self.file_name is None:
                     self.save_as_files()
-                    if self.file_name != None:
+                    if self.file_name is not None:
                         event.ignore()
                     for widget in all_dispositivos_widget:
                         widget.remove_button_clicked()
@@ -1794,14 +1804,17 @@ class MainWindow(QWidget):
                 for widget in all_dispositivos_widget:
                     widget.remove_button_clicked()
                 event.accept()
-        elif self.file_name != None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
+        elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget:
                 widget.remove_button_clicked()
             event.accept()
-    def hash_dict(self, d):
+
+    @staticmethod
+    def hash_dict(d):
         dict_str = json.dumps(d, sort_keys=True)
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
