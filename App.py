@@ -754,14 +754,23 @@ class AlertaDetalhes(QMainWindow):
 
     def format_alert_time(self, seconds):
         hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        time_str = ""
+        minutes, seconds = divmod(seconds, 60)
         if hours > 0:
-            time_str += f"{int(hours)} hora(s), "
-        if minutes > 0:
-            time_str += f"{int(minutes)} minuto(s), "
-        time_str += f"{int(seconds)} segundo(s)"
+            if minutes > 0 and seconds > 0:
+                time_str = f'{int(hours)} horas, {int(minutes)} minutos e {int(seconds)} segundos'
+            elif minutes > 0 and seconds == 0:
+                time_str = f'{int(hours)} horas e {int(minutes)} minutos'
+            elif minutes == 0 and seconds > 0:
+                time_str = f'{int(hours)} horas e {int(seconds)} segundos'
+            else:
+                time_str = f'{int(hours)} horas'
+        elif minutes > 0:
+            if seconds > 0:
+                time_str = f'{int(minutes)} minutos e {int(seconds)} segundos'
+            else:
+                time_str = f'{int(minutes)} minutos'
+        else:
+            time_str = f'{int(seconds)} segundos'
 
         return time_str
 
@@ -1835,4 +1844,3 @@ if __name__ == '__main__':
     window.show()
     app.exec_()
     print('Closing Window...')
-    sys.exit()
