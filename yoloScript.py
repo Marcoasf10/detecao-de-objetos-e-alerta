@@ -1,10 +1,14 @@
 import math
+import smtplib
 import time
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from threading import Thread, Lock
 import cv2
 import numpy as np
 from ultralytics import YOLO
 import pickle
+from twilio.rest import Client
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -26,7 +30,6 @@ alerta_tempo_start_lock = Lock()
 delete_devices_lock = Lock()
 
 
-
 def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
     listObjToFind = []
     for classe in classes:
@@ -40,6 +43,7 @@ def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
 
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
 
 def diferenceImgs(img1, img2):
     h, w = img1.shape
@@ -162,11 +166,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                         if time.time() - tempo_last >= tempo_alerta != 0:
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[device][id][classe_obj] = time.time()
-                            time_struct = time.localtime(time.time())
-                            formatted_time = time.strftime('%d/%m/%Y', time_struct)
-                            descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á 10 segundos'
-                            print("Gerado ALERTA!")
-                            alerta = Alerta(device, classe_obj, descricao, frame, time.time(), tempo_alerta)
+                            alerta = criar_alerta(device, classe_obj, frame, tempo_alerta)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
@@ -219,29 +219,101 @@ def list_available_cameras():
             break
     return devices
 
+
 def change_stop(device, stop):
     global stop_dict
     with stop_lock:
         stop_dict[device] = stop
+
 
 def change_delay(device, delay):
     global delay_dict
     with delay_lock:
         delay_dict[device] = delay
 
+
 def get_classes():
     return list(model.names.values())
 
-def update_obj_to_find(device ,obj_to_find, lista_alertas):
+
+def update_obj_to_find(device, obj_to_find, lista_alertas):
     global obj_find_dict
     obj_find_dict[device] = obj_to_find
     change_alert_time(device, lista_alertas)
 
+
 def remove_device(device):
     delete_devices.append(device)
 
+
 def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
+
+
+def criar_alerta(device, classe_obj, frame, tempo_alerta):
+    time_struct = time.localtime(time.time())
+    formatted_time = time.strftime('%d/%m/%Y', time_struct)
+    if tempo_alerta >= 3600:
+        hours, remainder = divmod(tempo_alerta, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if minutes > 0 and seconds > 0:
+            tempo_alerta_str = f'{int(hours)} hora(s), {int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
+        elif minutes > 0 and seconds == 0:
+            tempo_alerta_str = f'{int(hours)} hora(s) e {int(minutes)} minuto(s)'
+        elif minutes == 0 and seconds > 0:
+            tempo_alerta_str = f'{int(hours)} hora(s) e {int(seconds)} segundo(s)'
+        else:
+            tempo_alerta_str = f'{int(hours)} hora(s)'
+    elif tempo_alerta >= 60:
+        minutes, seconds = divmod(tempo_alerta, 60)
+        if seconds > 0:
+            tempo_alerta_str = f'{int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
+        tempo_alerta_str = f'{int(minutes)} minuto(s)'
+    else:
+        tempo_alerta_str = f'{int(tempo_alerta)} segundo(s)'
+
+    descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á {tempo_alerta_str}'
+    print("Gerado ALERTA!")
+    timestamp = time.time()
+    alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
+    time_struct = time.localtime(timestamp)
+    data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
+    subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
+        device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
+    send_email(f'Alerta!! {classe_obj} está parado à {tempo_alerta_str}', subject, "recipient@example.com","alert@safeSight.com")
+    #send_sms('+351965895440', subject)
+    return alerta
+
+
+def send_email(subject, body, to_email, from_email):
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    try:
+        # Connect to the fakeSMTP server
+        server = smtplib.SMTP('localhost', 2525)
+        text = msg.as_string()
+        server.sendmail(from_email, to_email, text)
+        server.quit()
+        print("Email sent successfully!")
+    except Exception as e:
+        print(f"Failed to send email. Error: {str(e)}")
+
+
+def send_sms(numero, mensagem):
+    account_id = "ACbb0292084f73400fbeed6a065c40952a"
+    auth_token = "14ce372723bef16b1b2ce8cd2af91858"
+    client = Client(account_id, auth_token)
+    client.messages.create(
+        body=mensagem,
+        from_='+14237193549',
+        to=numero
+    )
+
 
 class Alerta:
     def __init__(self, device, classe, descricao, photo, date, tempo_alerta):
@@ -269,5 +341,3 @@ class Alerta:
 
     def get_tempo_alerta(self):
         return self.tempo_alerta
-
-
