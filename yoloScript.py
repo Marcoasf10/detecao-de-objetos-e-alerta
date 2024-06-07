@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import pickle
+from twilio.rest import Client
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -50,44 +51,6 @@ def diferenceImgs(img1, img2):
     err = np.sum(diff ** 2)
     mse = err / (float(h * w))
     return mse, diff
-
-
-def criar_alerta(device, classe_obj, frame, tempo_alerta):
-    time_struct = time.localtime(time.time())
-    formatted_time = time.strftime('%d/%m/%Y', time_struct)
-    if tempo_alerta >= 3600:
-        hours, remainder = divmod(tempo_alerta, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        if minutes > 0 and seconds > 0:
-            tempo_alerta_str = f'{int(hours)} hora(s), {int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
-        elif minutes > 0 and seconds == 0:
-            tempo_alerta_str = f'{int(hours)} hora(s) e {int(minutes)} minuto(s)'
-        elif minutes == 0 and seconds > 0:
-            tempo_alerta_str = f'{int(hours)} hora(s) e {int(seconds)} segundo(s)'
-        else:
-            tempo_alerta_str = f'{int(hours)} hora(s)'
-    elif tempo_alerta >= 60:
-        minutes, seconds = divmod(tempo_alerta, 60)
-        if seconds > 0:
-            tempo_alerta_str = f'{int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
-        tempo_alerta_str = f'{int(minutes)} minuto(s)'
-    else:
-        tempo_alerta_str = f'{int(tempo_alerta)} segundo(s)'
-
-    descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á {tempo_alerta_str}'
-    print("Gerado ALERTA!")
-    timestamp = time.time()
-    alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
-    time_struct = time.localtime(timestamp)
-    data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
-    send_email(f'Alerta!! {classe_obj} está parado à {tempo_alerta_str}', "Alerta gerado pelo sistema de monitorização.\n"
-                                                                          "Dispositivo: " + str(device) + "\n"
-                                                                          "Classe: " + classe_obj + "\n"
-                                                                          "Data:" + data + "\n",
-                                                                          "Tempo Parado" + tempo_alerta_str + "\n"
-               "recipient@example.com",
-               "alert@safeSight.com")
-    return alerta
 
 
 def predict(device, listObjToFind, queue, delay, lista_alertas):
@@ -287,6 +250,41 @@ def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
 
 
+def criar_alerta(device, classe_obj, frame, tempo_alerta):
+    time_struct = time.localtime(time.time())
+    formatted_time = time.strftime('%d/%m/%Y', time_struct)
+    if tempo_alerta >= 3600:
+        hours, remainder = divmod(tempo_alerta, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if minutes > 0 and seconds > 0:
+            tempo_alerta_str = f'{int(hours)} hora(s), {int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
+        elif minutes > 0 and seconds == 0:
+            tempo_alerta_str = f'{int(hours)} hora(s) e {int(minutes)} minuto(s)'
+        elif minutes == 0 and seconds > 0:
+            tempo_alerta_str = f'{int(hours)} hora(s) e {int(seconds)} segundo(s)'
+        else:
+            tempo_alerta_str = f'{int(hours)} hora(s)'
+    elif tempo_alerta >= 60:
+        minutes, seconds = divmod(tempo_alerta, 60)
+        if seconds > 0:
+            tempo_alerta_str = f'{int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
+        tempo_alerta_str = f'{int(minutes)} minuto(s)'
+    else:
+        tempo_alerta_str = f'{int(tempo_alerta)} segundo(s)'
+
+    descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á {tempo_alerta_str}'
+    print("Gerado ALERTA!")
+    timestamp = time.time()
+    alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
+    time_struct = time.localtime(timestamp)
+    data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
+    subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
+        device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
+    send_email(f'Alerta!! {classe_obj} está parado à {tempo_alerta_str}', subject, "recipient@example.com","alert@safeSight.com")
+    #send_sms('+351965895440', subject)
+    return alerta
+
+
 def send_email(subject, body, to_email, from_email):
     msg = MIMEMultipart()
     msg['From'] = from_email
@@ -304,6 +302,17 @@ def send_email(subject, body, to_email, from_email):
         print("Email sent successfully!")
     except Exception as e:
         print(f"Failed to send email. Error: {str(e)}")
+
+
+def send_sms(numero, mensagem):
+    account_id = "ACbb0292084f73400fbeed6a065c40952a"
+    auth_token = "14ce372723bef16b1b2ce8cd2af91858"
+    client = Client(account_id, auth_token)
+    client.messages.create(
+        body=mensagem,
+        from_='+14237193549',
+        to=numero
+    )
 
 
 class Alerta:
