@@ -13,7 +13,7 @@ from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
-    QDesktopWidget, QMenuBar, QAction, QFileDialog
+    QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem
 from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
@@ -912,22 +912,48 @@ class AlertasWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)  # Filters layout
 
         self.filter_layout = QHBoxLayout()
+        self.device_spacer_item = QSpacerItem(80, 0, QSizePolicy.Expanding)
         self.device_filter = QComboBox()
+        self.device_filter.currentIndexChanged.connect(self.change_index_device)
         self.label_device = QLabel("Device: ")
         self.device_filter.setEditable(True)
         self.device_filter.setPlaceholderText("Filter by device")
+        self.clear_device_filter = QPushButton()
+        self.clear_device_filter.setIcon(QIcon("icons/close_red.png"))
+        self.clear_device_filter.setIconSize(QSize(15, 15))
+        self.clear_device_filter.setFixedSize(25, 25)
+        self.clear_device_filter.clicked.connect(self.clear_filter_device)
+        self.clear_device_filter_placeholder = QLabel()  # Placeholder widget
+        self.clear_device_filter_placeholder.setFixedSize(25, 25)
+        self.clear_device_filter.hide()
         self.object_filter = QComboBox()
+        self.object_filter.currentIndexChanged.connect(self.change_index_obj)
         self.label_object = QLabel("Object: ")
         self.object_filter.setEditable(True)
         self.object_filter.setPlaceholderText("Filter by object")
+        self.clear_obj_filter = QPushButton()
+        self.clear_obj_filter.setIcon(QIcon("icons/close_red.png"))
+        self.clear_obj_filter.setIconSize(QSize(15, 15))
+        self.clear_obj_filter.setFixedSize(25, 25)
+        self.clear_obj_filter.clicked.connect(self.clear_filter_obj)
+        self.clear_obj_filter_placeholder = QLabel()  # Placeholder widget
+        self.clear_obj_filter_placeholder.setFixedSize(25, 25)
+        self.clear_obj_filter.hide()
         self.label_ordem = QLabel("Order by: ")
         self.order_filter = QComboBox()
+        self.order_spacer_item = QSpacerItem(80, 0, QSizePolicy.Expanding)
+        self.filter_layout.addSpacerItem(self.device_spacer_item)
         self.filter_layout.addWidget(self.label_device, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.device_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addWidget(self.clear_device_filter, 0, Qt.AlignLeft)
+        self.filter_layout.addWidget(self.clear_device_filter_placeholder, 0, Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_object, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.object_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addWidget(self.clear_obj_filter_placeholder, 0, Qt.AlignLeft)
+        self.filter_layout.addWidget(self.clear_obj_filter, 0, Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addSpacerItem(self.order_spacer_item)
         self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
         self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
 
@@ -954,6 +980,9 @@ class AlertasWindow(QWidget):
                 font-size: 14px;
                 color: #FFFFFF;
                 margin: 0px;  /* Reduce margin */
+            }
+            QPushButton {
+                margin-right: 10px;  /* Adjust margin */
             }
             QComboBox {
                 font-size: 14px;
@@ -1055,6 +1084,10 @@ class AlertasWindow(QWidget):
         self.order_filter.setCurrentIndex(0)
         # Reload original alerts
         self.carregar_alertas()
+        self.clear_device_filter.hide()
+        self.clear_device_filter_placeholder.show()
+        self.clear_obj_filter.hide()
+        self.clear_obj_filter_placeholder.show()
 
     def mostrar_alertas(self, alertas):
         self.alertas_widgets = []
@@ -1065,6 +1098,25 @@ class AlertasWindow(QWidget):
 
     def remove_alerta_widget(self, alerta_widget):
         self.alertas_widgets.remove(alerta_widget)
+
+    def clear_filter_device(self):
+        self.device_filter.setCurrentIndex(-1)
+        self.clear_device_filter.hide()
+        self.clear_device_filter_placeholder.show()
+        self.filter_alertas()
+
+    def clear_filter_obj(self):
+        self.object_filter.setCurrentIndex(-1)
+        self.clear_obj_filter.hide()
+        self.clear_obj_filter_placeholder.show()
+        self.filter_alertas()
+    def change_index_device(self):
+        self.clear_device_filter.show()
+        self.clear_device_filter_placeholder.hide()
+
+    def change_index_obj(self):
+        self.clear_obj_filter.show()
+        self.clear_obj_filter_placeholder.hide()
 
 
 class ImageWindow(QMainWindow):
