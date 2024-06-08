@@ -273,7 +273,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     else:
         tempo_alerta_str = f'{int(tempo_alerta)} segundo(s)'
 
-    descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado á {tempo_alerta_str}'
+    descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado há {tempo_alerta_str}'
     print("Gerado ALERTA!")
     timestamp = time.time()
     alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
@@ -281,7 +281,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
     subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
         device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
-    send_email(f'Alerta!! {classe_obj} está parado à {tempo_alerta_str}', subject, "recipient@example.com","alert@safeSight.com")
+    send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, "recipient@example.com","alert@safeSight.com")
     #send_sms('+351965895440', subject)
     return alerta
 
