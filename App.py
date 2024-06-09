@@ -445,10 +445,10 @@ class DispositivoWidget(QWidget):
     def handle_done_clicked(self, name, device, selected_items, lista_alertas):
         print(f"Updating device '{device}' with selected items: {selected_items}")
         self.name = name
-        #Altera o nome do DispositivoWidget
+        # Altera o nome do DispositivoWidget
         self.label.setText(name)
         self.objToFind = selected_items
-        #Caso o dispositivo seja um número, converte para inteiro
+        # Caso o dispositivo seja um número, converte para inteiro
         if device.isdigit():
             device = int(device)
         self.lista_alertas = lista_alertas
@@ -702,6 +702,7 @@ class DispositivosWindow(QWidget):
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
             self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
+
 
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
@@ -1062,10 +1063,11 @@ class AlertasWindow(QWidget):
 
     def filter_alertas(self):
         alertas = self.alertas
+        # Remove todos os AlertaWidgets
         for widget in self.alertas_widgets:
             self.layout.removeWidget(widget)
             widget.deleteLater()
-        # Apply filters
+        # Aplica os filtros
         device_filter_text = self.device_filter.currentText().lower()
         object_filter_text = self.object_filter.currentText().lower()
         order_by = self.order_filter.currentText()
@@ -1078,7 +1080,7 @@ class AlertasWindow(QWidget):
 
         if object_filter_text:
             alertas = [alerta for alerta in alertas if object_filter_text in alerta.get_descricao()]
-
+        # Chama a funcao que cria os AlertaWidgets e os adiciona ao layout
         self.mostrar_alertas(alertas)
 
     def clear_filters(self):
@@ -1114,6 +1116,7 @@ class AlertasWindow(QWidget):
         self.clear_obj_filter.hide()
         self.clear_obj_filter_placeholder.show()
         self.filter_alertas()
+
     def change_index_device(self):
         self.clear_device_filter.show()
         self.clear_device_filter_placeholder.hide()

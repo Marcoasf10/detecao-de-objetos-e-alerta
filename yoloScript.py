@@ -72,16 +72,19 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
     stop = False
     alerta_filename = 'alertas.bin'
     while True:
+        # Verifica se o dispositivo foi removido
         with delete_devices_lock:
             if device in delete_devices:
                 break
+        # Verifica se o dispositivo foi parado
         with stop_lock:
             if device in stop_dict:
                 stop = stop_dict[device]
+        # Se o dispositivo foi parado, fecha a câmara
         if stop:
             if cap.isOpened():
                 cap.release()
-            time.sleep(1)
+            time.sleep(0.5)
             continue
         if not cap.isOpened():
             cap = cv2.VideoCapture(device)
@@ -174,26 +177,34 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                         alerta_tempo_start[device][id][classe_obj] = time.time()
                         print(f"ID: {int(id)} -> Mover")
         i += 1
+        # Enquanto o tempo decorrido for menor que o delay definido, continua a capturar frames
         while time.time() - start_time_predict <= delay:
+            # Verifica se o dispositivo foi removido
             with delete_devices_lock:
                 if device in delete_devices:
                     break
+            # Verifica se o dispositivo foi parado
             with stop_lock:
                 if device in stop_dict:
                     stop = stop_dict[device]
                     if stop:
                         break
+            # Verifica se tempo de delay foi alterado
             with delay_lock:
                 if device in delay_dict:
                     delay = delay_dict[device]
             cap.grab()
+    # Fechar a câmara
     cap.release()
+    # Limpar o dicionário de alertas para o dispositivo eliminado
     with alert_time_lock:
         alert_time_dict[device] = {}
     with alerta_tempo_start_lock:
         alerta_tempo_start[device] = {}
+    # Limpar o dicionário de objetos para detetar para o dispositivo eliminado
     with obj_find_lock:
         obj_find_dict[device] = {}
+    # Retirar o device dos dispositivos a eliminar
     delete_devices.remove(device)
 
 
