@@ -944,6 +944,9 @@ class AlertasWindow(QWidget):
         self.clear_obj_filter_placeholder = QLabel()  # Placeholder widget
         self.clear_obj_filter_placeholder.setFixedSize(25, 25)
         self.clear_obj_filter.hide()
+        self.clear_filter_btn = LightButton("Clear Filters")
+        self.clear_filter_btn.setMaximumWidth(120)  # Adjust button width
+        self.clear_filter_btn.clicked.connect(self.clear_filters)
         self.label_ordem = QLabel("Order by: ")
         self.order_filter = QComboBox()
         self.order_spacer_item = QSpacerItem(80, 0, QSizePolicy.Expanding)
@@ -958,6 +961,7 @@ class AlertasWindow(QWidget):
         self.filter_layout.addWidget(self.clear_obj_filter, 0, Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignLeft)
         self.filter_layout.addSpacerItem(self.order_spacer_item)
         self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
         self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
@@ -966,16 +970,16 @@ class AlertasWindow(QWidget):
 
         # Add a button layout
         # Add a button layout
+        """
         self.button_layout = QHBoxLayout()
         self.apply_filter_btn = LightButton("Apply Filters")
         self.apply_filter_btn.setMaximumWidth(120)  # Adjust button width
         self.apply_filter_btn.clicked.connect(self.filter_alertas)
         self.button_layout.addWidget(self.apply_filter_btn, 0, Qt.AlignCenter | Qt.AlignRight)  # Adjust alignment
-        self.clear_filter_btn = LightButton("Clear Filters")
-        self.clear_filter_btn.setMaximumWidth(120)  # Adjust button width
-        self.clear_filter_btn.clicked.connect(self.clear_filters)
+
         self.button_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignCenter | Qt.AlignLeft)  # Adjust alignment
         self.layout.addLayout(self.button_layout)
+        """
         self.alertas_widgets = []
         self.layout.addWidget(self.scroll_area)
         self.carregar_alertas()
