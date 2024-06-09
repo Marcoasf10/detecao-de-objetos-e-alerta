@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import json
 import os
@@ -8,12 +9,12 @@ from threading import Thread
 
 import cv2
 import numpy as np
-from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread
+from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread,QDate
 from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
-    QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem
+    QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem, QDateEdit
 from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
@@ -917,12 +918,14 @@ class AlertasWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)  # Filters layout
 
         self.filter_layout = QHBoxLayout()
-        self.device_spacer_item = QSpacerItem(80, 0, QSizePolicy.Expanding)
+
+        self.device_spacer_item = QSpacerItem(50, 0, QSizePolicy.Expanding)
         self.device_filter = QComboBox()
         self.device_filter.currentIndexChanged.connect(self.change_index_device)
         self.label_device = QLabel("Device: ")
         self.device_filter.setEditable(True)
         self.device_filter.setPlaceholderText("Filter by device")
+
         self.clear_device_filter = QPushButton()
         self.clear_device_filter.setIcon(QIcon("icons/close_red.png"))
         self.clear_device_filter.setIconSize(QSize(15, 15))
@@ -931,11 +934,13 @@ class AlertasWindow(QWidget):
         self.clear_device_filter_placeholder = QLabel()  # Placeholder widget
         self.clear_device_filter_placeholder.setFixedSize(25, 25)
         self.clear_device_filter.hide()
+
         self.object_filter = QComboBox()
         self.object_filter.currentIndexChanged.connect(self.change_index_obj)
         self.label_object = QLabel("Object: ")
         self.object_filter.setEditable(True)
         self.object_filter.setPlaceholderText("Filter by object")
+
         self.clear_obj_filter = QPushButton()
         self.clear_obj_filter.setIcon(QIcon("icons/close_red.png"))
         self.clear_obj_filter.setIconSize(QSize(15, 15))
@@ -944,12 +949,31 @@ class AlertasWindow(QWidget):
         self.clear_obj_filter_placeholder = QLabel()  # Placeholder widget
         self.clear_obj_filter_placeholder.setFixedSize(25, 25)
         self.clear_obj_filter.hide()
+
         self.clear_filter_btn = LightButton("Clear Filters")
-        self.clear_filter_btn.setMaximumWidth(120)  # Adjust button width
+        self.clear_filter_btn.setMaximumWidth(140)  # Adjust button width
         self.clear_filter_btn.clicked.connect(self.clear_filters)
+        self.clear_filter_btn.setObjectName("clear_filter_btn")
+
         self.label_ordem = QLabel("Order by: ")
         self.order_filter = QComboBox()
-        self.order_spacer_item = QSpacerItem(80, 0, QSizePolicy.Expanding)
+        self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
+        self.order_filter.currentIndexChanged.connect(self.filter_alertas)
+        self.date_spacer_item = QSpacerItem(25, 0, QSizePolicy.Fixed)
+
+        # Date filters
+        self.label_date_from = QLabel("De: ")
+        self.date_from = QDateEdit()
+        self.date_from.setCalendarPopup(True)
+        self.date_from.dateChanged.connect(self.filter_alertas)
+
+        self.label_date_to = QLabel("Até: ")
+        self.date_to = QDateEdit()
+        self.date_to.setCalendarPopup(True)
+        self.date_to.setDate(QDate.currentDate())  # Default to today
+        self.date_to.dateChanged.connect(self.filter_alertas)
+        self.clear_spacer_item = QSpacerItem(50, 0, QSizePolicy.Expanding)
+
         self.filter_layout.addSpacerItem(self.device_spacer_item)
         self.filter_layout.addWidget(self.label_device, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.device_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
@@ -961,10 +985,15 @@ class AlertasWindow(QWidget):
         self.filter_layout.addWidget(self.clear_obj_filter, 0, Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addSpacerItem(self.date_spacer_item)
+        self.filter_layout.addWidget(self.label_date_from, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.date_from, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout.addSpacerItem(self.date_spacer_item)
+        self.filter_layout.addWidget(self.label_date_to, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout.addWidget(self.date_to, 0, Qt.AlignCenter | Qt.AlignLeft)
         self.filter_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignLeft)
-        self.filter_layout.addSpacerItem(self.order_spacer_item)
+        self.filter_layout.addSpacerItem(self.clear_spacer_item)
         self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
-        self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
 
         self.layout.addLayout(self.filter_layout)
 
@@ -983,10 +1012,16 @@ class AlertasWindow(QWidget):
         self.alertas_widgets = []
         self.layout.addWidget(self.scroll_area)
         self.carregar_alertas()
+        ultimo_alerta = self.alertas[-1]
+        data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
+        self.date_from.setDate(QDate(data.year, data.month, data.day))
         self.setLayout(self.layout)
         self.setStyleSheet("""
+            QPushButton#clear_filter_btn {
+                margin-left: 20px;
+            }
             QLabel {
-                font-size: 14px;
+                font-size: 15px;
                 color: #FFFFFF;
                 margin: 0px;  /* Reduce margin */
             }
@@ -994,7 +1029,7 @@ class AlertasWindow(QWidget):
                 margin-right: 10px;  /* Adjust margin */
             }
             QComboBox {
-                font-size: 14px;
+                font-size: 15px;
                 background-color: #D9D9D9;
                 color: #000000;
                 border: 1px solid #D9D9D9;
@@ -1004,17 +1039,42 @@ class AlertasWindow(QWidget):
                 padding: 2px 5px;
                 margin: 0px;  /* Reduce margin */
             }
+                
+            QDateEdit {
+                font-size: 15px;
+                background-color: #D9D9D9;
+                color: #000000;
+                border: 1px solid #D9D9D9;
+                border-radius: 10px;
+                height: 25px;
+                width: 150px;
+                padding: 2px 5px;
+                margin: 0px;  /* Reduce margin */
+            }
+            
             QComboBox::drop-down {
                 border: none;
                 background-color: #D9D9D9;
                 margin-right: 5px;  /* Adjust margin */
                 height: 30px;
             }
+            
+            QDateEdit::drop-down {
+                border: none;
+                image: url(icons/calendario.png);
+                margin-right: 5px;  /* Adjust margin */
+                margin-top: 5px;
+                height: 20px;
+                width: 20px;
+            }
+            
             QComboBox::down-arrow {
                 image: url(icons/dropdown.png);
                 width: 15px;
                 height: 15px;
             }
+            
+            
             QComboBox QAbstractItemView {
                 background-color: #D9D9D9; /* Background color of the items */
                 border-radius: 10px;
@@ -1084,6 +1144,17 @@ class AlertasWindow(QWidget):
 
         if object_filter_text:
             alertas = [alerta for alerta in alertas if object_filter_text in alerta.get_descricao()]
+
+        date_from = self.date_from.date().toPyDate()
+        date_to = self.date_to.date().toPyDate()
+        datetime_to = datetime.datetime(date_to.year, date_to.month, date_to.day)
+        #Fazer com que seja o final do dia para incluir os alerta do proprio dia
+        datetime_to = datetime_to + datetime.timedelta(days=1)
+        datetime_to -= datetime.timedelta(seconds=1)
+        timestamp_to = datetime_to.timestamp()
+        datetime_from = datetime.datetime(date_from.year, date_from.month, date_from.day)
+        timestamp_from = datetime_from.timestamp()
+        alertas = [alerta for alerta in alertas if timestamp_from <= alerta.get_date() <= timestamp_to]
         # Chama a funcao que cria os AlertaWidgets e os adiciona ao layout
         self.mostrar_alertas(alertas)
 
@@ -1092,6 +1163,10 @@ class AlertasWindow(QWidget):
         self.device_filter.setCurrentIndex(-1)
         self.object_filter.setCurrentIndex(-1)
         self.order_filter.setCurrentIndex(0)
+        self.date_to.setDate(QDate.currentDate())
+        ultimo_alerta = self.alertas[-1]
+        data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
+        self.date_from.setDate(QDate(data.year, data.month, data.day))
         # Reload original alerts
         self.carregar_alertas()
         self.clear_device_filter.hide()
@@ -1124,10 +1199,12 @@ class AlertasWindow(QWidget):
     def change_index_device(self):
         self.clear_device_filter.show()
         self.clear_device_filter_placeholder.hide()
+        self.filter_alertas()
 
     def change_index_obj(self):
         self.clear_obj_filter.show()
         self.clear_obj_filter_placeholder.hide()
+        self.filter_alertas()
 
 
 class ImageWindow(QMainWindow):
