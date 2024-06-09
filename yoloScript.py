@@ -239,7 +239,8 @@ def get_classes():
 
 def update_obj_to_find(device, obj_to_find, lista_alertas):
     global obj_find_dict
-    obj_find_dict[device] = obj_to_find
+    with obj_find_lock:
+        obj_find_dict[device] = obj_to_find
     change_alert_time(device, lista_alertas)
 
 

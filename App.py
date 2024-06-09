@@ -433,21 +433,26 @@ class DispositivoWidget(QWidget):
         self.image_window.show()
 
     def setting_button_clicked(self):
+        # Guarda o valor do delay que está na combobox
         delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
-        print("delay", delay)
+        # Abre a janela de configuração
         self.config_dialog = ConfigurarDispositivo(self.name, self.device, self.objToFind,
                                                    alertas_dict=self.lista_alertas, time_frame=delay)
+        # Conecta o sinal done_clicked à funcao handle_done_clicked
         self.config_dialog.done_clicked.connect(self.handle_done_clicked)
         self.config_dialog.exec_()
 
     def handle_done_clicked(self, name, device, selected_items, lista_alertas):
         print(f"Updating device '{device}' with selected items: {selected_items}")
         self.name = name
+        #Altera o nome do DispositivoWidget
         self.label.setText(name)
         self.objToFind = selected_items
+        #Caso o dispositivo seja um número, converte para inteiro
         if device.isdigit():
             device = int(device)
         self.lista_alertas = lista_alertas
+        # Atualiza os objetos a detetar e a lista de alertas do dispositivo no yoloScript
         yoloScript.update_obj_to_find(device, self.objToFind, self.lista_alertas)
 
     def update_image(self, frame):
@@ -609,7 +614,6 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setEnabled(True)
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-        self.read_queue = True
 
     def layout_mosaico(self):
         global all_dispositivos_widget
@@ -654,7 +658,7 @@ class DispositivosWindow(QWidget):
         yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10)
 
     def readQueue(self):
-        while self.read_queue:
+        while True:
             try:
                 frames = self.queue.get()
                 if frames == -1:
