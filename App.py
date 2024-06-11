@@ -918,6 +918,8 @@ class AlertasWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_widget)  # Filters layout
 
         self.filter_layout = QHBoxLayout()
+        self.filter_layout_2 = QHBoxLayout()
+        self.filter_layout_vertical = QVBoxLayout()
 
         self.device_spacer_item = QSpacerItem(50, 0, QSizePolicy.Expanding)
         self.device_filter = QComboBox()
@@ -985,17 +987,20 @@ class AlertasWindow(QWidget):
         self.filter_layout.addWidget(self.clear_obj_filter, 0, Qt.AlignLeft)
         self.filter_layout.addWidget(self.label_ordem, 0, Qt.AlignCenter | Qt.AlignRight)
         self.filter_layout.addWidget(self.order_filter, 0, Qt.AlignCenter | Qt.AlignLeft)
-        self.filter_layout.addSpacerItem(self.date_spacer_item)
-        self.filter_layout.addWidget(self.label_date_from, 0, Qt.AlignCenter | Qt.AlignRight)
-        self.filter_layout.addWidget(self.date_from, 0, Qt.AlignCenter | Qt.AlignLeft)
-        self.filter_layout.addSpacerItem(self.date_spacer_item)
-        self.filter_layout.addWidget(self.label_date_to, 0, Qt.AlignCenter | Qt.AlignRight)
-        self.filter_layout.addWidget(self.date_to, 0, Qt.AlignCenter | Qt.AlignLeft)
-        self.filter_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignLeft)
         self.filter_layout.addSpacerItem(self.clear_spacer_item)
+        self.filter_layout_2.addSpacerItem(self.clear_spacer_item)
+        self.filter_layout_2.addWidget(self.label_date_from, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout_2.addWidget(self.date_from, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout_2.addSpacerItem(self.date_spacer_item)
+        self.filter_layout_2.addWidget(self.label_date_to, 0, Qt.AlignCenter | Qt.AlignRight)
+        self.filter_layout_2.addWidget(self.date_to, 0, Qt.AlignCenter | Qt.AlignLeft)
+        self.filter_layout_2.addWidget(self.clear_filter_btn, 0, Qt.AlignLeft)
+        self.filter_layout_2.addSpacerItem(self.clear_spacer_item)
         self.object_filter.addItems(list(sorted(yoloScript.get_classes())))
 
-        self.layout.addLayout(self.filter_layout)
+        self.filter_layout_vertical.addLayout(self.filter_layout)
+        self.filter_layout_vertical.addLayout(self.filter_layout_2)
+        self.layout.addLayout(self.filter_layout_vertical)
 
         # Add a button layout
         # Add a button layout
