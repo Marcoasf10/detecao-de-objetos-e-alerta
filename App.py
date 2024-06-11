@@ -704,7 +704,6 @@ class DispositivosWindow(QWidget):
         for device_data in data.get("devices", []):
             self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
 
-
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
@@ -1942,6 +1941,8 @@ class MainWindow(QWidget):
                     event.accept()
                 else:
                     self.save_files()
+                    for widget in all_dispositivos_widget:
+                        widget.remove_button_clicked()
                     event.accept()
             elif reply == QMessageBox.Cancel:
                 event.ignore()
