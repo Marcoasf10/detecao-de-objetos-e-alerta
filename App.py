@@ -615,7 +615,32 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setEnabled(True)
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-
+        """
+        self.add_dispositivo("Dispositivo 1", 0, [], {})
+        self.add_dispositivo("Dispositivo 2", 1, [], {})
+        self.add_dispositivo("Dispositivo 3", 2, [], {})
+        self.add_dispositivo("Dispositivo 4", "http://75.149.26.30:1024/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 5", "http://74.65.56.223:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 6", "http://72.199.200.5:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 7", "http://109.192.213.146:8888/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 8", "http://139.64.168.120:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 9", "http://77.98.38.218:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 10", "http://97.68.104.34:80/mjpg/video.mjpg", [], {})
+        self.add_dispositivo("Dispositivo 11", "http://62.131.207.209:8080/cam_1.cgi", [], {})
+        self.add_dispositivo("Dispositivo 12", "http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444", [], {})
+        self.add_dispositivo("Dispositivo 13", "http://195.223.180.50/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 14", "http://45.46.151.31:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 15", "http://216.137.193.126:8083/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 16", "http://109.206.96.58:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 17", "http://198.71.120.207:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 18", "http://79.120.134.229:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 19", "http://99.114.240.169:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 20", "http://216.137.193.126:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 21", "http://185.97.122.128/cgi-bin/faststream.jpg?stream=half&fps=30&rand=COUNTER", [], {})
+        self.add_dispositivo("Dispositivo 22", "http://37.156.71.253/cgi-bin/faststream.jpg?stream=half&fps=15&rand=COUNTER", [], {})
+        self.add_dispositivo("Dispositivo 23", "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430", [], {})
+        self.add_dispositivo("Dispositivo 24", "http://166.247.77.253:81/mjpg/video.mjpg", [], {})
+        """
     def layout_mosaico(self):
         global all_dispositivos_widget
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -1681,7 +1706,7 @@ class ConfigurarDispositivo(QDialog):
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
-            device = self.ip_line_edit.text()
+            device = self.ip_line_edit.text().strip()
             if device in self.dispositivo_dict.keys():
                 QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
                 return
@@ -1949,12 +1974,13 @@ class MainWindow(QWidget):
             elif reply == QMessageBox.No:
                 for widget in all_dispositivos_widget:
                     widget.remove_button_clicked()
+                self.dispositivos_window.queue.put(-1)
                 event.accept()
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget:
                 widget.remove_button_clicked()
             event.accept()
-
+        self.dispositivos_window.queue.put(-1)
     @staticmethod
     def hash_dict(d):
         dict_str = json.dumps(d, sort_keys=True)

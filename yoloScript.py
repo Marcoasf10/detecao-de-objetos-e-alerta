@@ -1,4 +1,5 @@
 import math
+import os
 import smtplib
 import time
 from email.mime.multipart import MIMEMultipart
@@ -9,6 +10,10 @@ import numpy as np
 from ultralytics import YOLO
 import pickle
 from twilio.rest import Client
+import psutil
+import matplotlib.pyplot as plt
+import shutil
+import datetime
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -28,20 +33,31 @@ delay_lock = Lock()
 alert_time_lock = Lock()
 alerta_tempo_start_lock = Lock()
 delete_devices_lock = Lock()
-
+cpu_usage = []
+memory_usage = []
+cpu_usage_lock = Lock()
+memory_usage_lock = Lock()
+cpu_inicial = psutil.cpu_percent()
+memory_inicial = psutil.virtual_memory().percent
+threads = []
+grafico_made = True
+grafico_made_lock = Lock()
 
 def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
+    global grafico_made
     listObjToFind = []
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     change_alert_time(device, lista_alertas)
     thread = Thread(target=predict, args=(device, listObjToFind, queue, delay, lista_alertas))
+    threads.append(thread)
     thread.start()
     thread.join()
     cv2.destroyAllWindows()
-    queue.put(-1)
-
-
+    with grafico_made_lock:
+        if grafico_made:
+            #graficoPerformance(cpu_usage, memory_usage)
+            grafico_made = False
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
@@ -71,6 +87,12 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
     error = 0
     stop = False
     alerta_filename = 'alertas.bin'
+    if 'http' in str(device) or 'rtsp' in str(device):
+        device_folder = device.split('/')[2].replace('.', '_').replace(':', '_')
+    else:
+        device_folder = str(device)
+    if not os.path.exists(f'frames/{device_folder}'):
+        os.makedirs(f'frames/{device_folder}')
     while True:
         # Verifica se o dispositivo foi removido
         with delete_devices_lock:
@@ -102,15 +124,21 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
         start_time_predict = time.time()
         grabbed = cap.grab()
         if not grabbed:
-            cap.release()
-            cap = cv2.VideoCapture(device)
-            print(device)
-            print("Error: Unable to grab frame from webcam.")
-            continue
+            i = 0
+            while not grabbed and i < 20:
+                time.sleep(0.1)
+                grabbed = cap.grab()
+                i += 1
+            if not grabbed:
+                cap.release()
+                cap = cv2.VideoCapture(device)
+                print(device)
+                print("Error: Unable to grab frame from webcam.")
+                continue
         ret, frame = cap.retrieve()
         if not ret:
             print("Error: Unable to retrieve frame from webcam.")
-            break
+            continue
         if last_frame is not None:
             img1 = cv2.cvtColor(last_frame, cv2.COLOR_BGR2GRAY)
             img2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -118,7 +146,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
             print("Error diference: ", error)
         # if img not equal last img:
         if last_frame is None or (last_frame is not None and error > 0):
-            results = local_model.track(frame, save=True, project="frames", exist_ok=True, classes=listObjToFind,
+            results = local_model.track(frame, save=True, project=f'frames/{device_folder}', exist_ok=True, classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280, conf=0.3)
             last_frame = frame
         with delete_devices_lock:
@@ -126,7 +154,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                 break
         with predicted_frames_lock:
             try:
-                predicted_frames[device] = cv2.imread("frames/track/image0.jpg")
+                predicted_frames[device] = cv2.imread(f'frames/{device_folder}/track/image0.jpg')
             except Exception as e:
                 print(f"Error: {e}")
                 continue
@@ -194,6 +222,10 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
                 if device in delay_dict:
                     delay = delay_dict[device]
             cap.grab()
+        with cpu_usage_lock:
+            cpu_usage.append(psutil.cpu_percent())
+        with memory_usage_lock:
+            memory_usage.append(psutil.virtual_memory().percent)
     # Fechar a câmara
     cap.release()
     # Limpar o dicionário de alertas para o dispositivo eliminado
@@ -205,7 +237,12 @@ def predict(device, listObjToFind, queue, delay, lista_alertas):
     with obj_find_lock:
         obj_find_dict[device] = {}
     # Retirar o device dos dispositivos a eliminar
-    delete_devices.remove(device)
+    if device in delete_devices:
+        with delete_devices_lock:
+            delete_devices.remove(device)
+    if os.path.exists(f'frames/{device_folder}'):
+        # Remover a pasta e todos os ficheiros
+        shutil.rmtree(f'frames/{device_folder}')
 
 
 def list_available_cameras():
@@ -327,6 +364,46 @@ def send_sms(numero, mensagem):
         to=numero
     )
 
+def graficoPerformance(cpu_usage, memory_usage):
+    fig, axs = plt.subplots(1, 2, figsize=(15, 10))
+    timestamp = datetime.datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+    cpu_usage_array = np.array(cpu_usage)
+    memory_usage_array = np.array(memory_usage)
+
+    # Gráfico para a distância entre os cantos 1
+    axs[0].plot(range(len(cpu_usage_array)), cpu_usage_array, label='CPU Usage', color='blue')
+    axs[0].axhline(y=np.mean(cpu_usage_array), color='grey', linestyle='--', label='CPU Usage Mean')
+    axs[0].text(0.5, 0.9, f'Inicial CPU (%): {cpu_inicial:.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.8, f'Max CPU Usage (%): {max(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.7, f'Min CPU Usage (%): {min(cpu_usage_array):.2f}', transform=axs[0].transAxes, color='black')
+    axs[0].text(0.5, 0.6, f'Média CPU Usage (%): {np.mean(cpu_usage_array):.2f}', transform=axs[0].transAxes,
+                color='black')
+    axs[0].set_title('CPU Usage (%)')
+    axs[0].set_xlabel('Frame')
+    axs[0].set_ylabel('Usage')
+    axs[0].set_yticks(np.arange(0, 100, 10))
+    axs[0].legend()
+
+    # Gráfico para a distância entre os cantos 2
+    axs[1].plot(range(len(memory_usage_array)), memory_usage_array, label='CPU Usage', color='blue')
+    axs[1].axhline(y=np.mean(memory_usage_array), color='grey', linestyle='--', label='CPU Usage Mean')
+    axs[1].text(0.5, 0.5, f'Inicial Memory (%): {memory_inicial:.2f}', transform=axs[1].transAxes, color='black')
+    axs[1].text(0.5, 0.4, f'Max Memory usage (%): {max(memory_usage_array):.2f}', transform=axs[1].transAxes,
+                color='black')
+    axs[1].text(0.5, 0.3, f'Min Memory usage (%): {min(memory_usage_array):.2f}', transform=axs[1].transAxes,
+                color='black')
+    axs[1].text(0.5, 0.2, f'Média Memory usage (%): {np.mean(memory_usage_array):.2f}', transform=axs[1].transAxes,
+                color='black')
+    axs[1].set_title('Memory Usage (%)')
+    axs[1].set_xlabel('Frame')
+    axs[1].set_ylabel('Usage')
+    axs[1].set_yticks(np.arange(0, 100, 10))
+    axs[1].legend()
+    plt.suptitle(f'Teste de stress camera 10 segundos', fontsize=16)
+    plt.tight_layout()
+    output_filename = f'graficosTestes/performanceGraph_MAX_10segundos_{timestamp}_{modelo}.png'
+    plt.savefig(output_filename)
+    plt.show()
 
 class Alerta:
     def __init__(self, device, classe, descricao, photo, date, tempo_alerta):
