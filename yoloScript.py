@@ -340,7 +340,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     with phone_numbers_alert_lock:
         for phone_number in phone_numbers_alert:
             print(phone_number)
-            send_sms(phone_number, subject)
+            #send_sms(phone_number, subject)
 
     return alerta
 
