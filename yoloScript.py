@@ -42,6 +42,10 @@ memory_inicial = psutil.virtual_memory().percent
 threads = []
 grafico_made = True
 grafico_made_lock = Lock()
+emails_alert = []
+phone_numbers_alert = []
+emails_alert_lock = Lock()
+phone_numbers_alert_lock = Lock()
 
 def addDispositivoToPredict(device, classes, lista_alertas, queue, delay):
     global grafico_made
@@ -330,8 +334,14 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
     subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
         device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
-    send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, "recipient@example.com","alert@safeSight.com")
-    #send_sms('+351965895440', subject)
+    with emails_alert_lock:
+        for email in emails_alert:
+            send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email,"alert@safeSight.com")
+    with phone_numbers_alert_lock:
+        for phone_number in phone_numbers_alert:
+            print(phone_number)
+            send_sms(phone_number, subject)
+
     return alerta
 
 
@@ -363,6 +373,16 @@ def send_sms(numero, mensagem):
         from_='+14237193549',
         to=numero
     )
+
+def emails_to_send_alert(emails):
+    global emails_alert
+    with emails_alert_lock:
+        emails_alert = emails
+
+def phone_numbers_to_send_alert(phone_numbers):
+    global phone_numbers_alert
+    with phone_numbers_alert_lock:
+        phone_numbers_alert = phone_numbers
 
 def graficoPerformance(cpu_usage, memory_usage):
     fig, axs = plt.subplots(1, 2, figsize=(15, 10))
