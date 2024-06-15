@@ -1946,7 +1946,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowIcon(QIcon('icons/iconBranco.png'))
-        self.setWindowTitle("Object Detection")
+        self.setWindowTitle("SafeSight")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
                 QMenuBar {
@@ -2233,5 +2233,6 @@ if __name__ == '__main__':
                }
            ''')
     window.show()
+    app.setWindowIcon(QIcon('icons/iconBranco.png'))
     app.exec_()
     print('Closing Window...')
