@@ -6,7 +6,8 @@ import sys
 import time
 from multiprocessing import Queue
 from threading import Thread
-
+import phonenumbers
+from phonenumbers import PhoneMetadata
 import cv2
 import numpy as np
 from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread,QDate
@@ -615,7 +616,32 @@ class DispositivosWindow(QWidget):
         self.mosaicoButton.setEnabled(True)
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #5B5B5B}")
-
+        """
+        self.add_dispositivo("Dispositivo 1", 0, [], {})
+        self.add_dispositivo("Dispositivo 2", 1, [], {})
+        self.add_dispositivo("Dispositivo 3", 2, [], {})
+        self.add_dispositivo("Dispositivo 4", "http://75.149.26.30:1024/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 5", "http://74.65.56.223:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 6", "http://72.199.200.5:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 7", "http://109.192.213.146:8888/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 8", "http://139.64.168.120:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 9", "http://77.98.38.218:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 10", "http://97.68.104.34:80/mjpg/video.mjpg", [], {})
+        self.add_dispositivo("Dispositivo 11", "http://62.131.207.209:8080/cam_1.cgi", [], {})
+        self.add_dispositivo("Dispositivo 12", "http://80.15.116.66:86/SnapshotJPEG?Resolution=640x480&amp;Quality=Clarity&amp;1713985444", [], {})
+        self.add_dispositivo("Dispositivo 13", "http://195.223.180.50/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 14", "http://45.46.151.31:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 15", "http://216.137.193.126:8083/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 16", "http://109.206.96.58:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 17", "http://198.71.120.207:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 18", "http://79.120.134.229:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 19", "http://99.114.240.169:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 20", "http://216.137.193.126:8080/cam_1.jpg", [], {})
+        self.add_dispositivo("Dispositivo 21", "http://185.97.122.128/cgi-bin/faststream.jpg?stream=half&fps=30&rand=COUNTER", [], {})
+        self.add_dispositivo("Dispositivo 22", "http://37.156.71.253/cgi-bin/faststream.jpg?stream=half&fps=15&rand=COUNTER", [], {})
+        self.add_dispositivo("Dispositivo 23", "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430", [], {})
+        self.add_dispositivo("Dispositivo 24", "http://166.247.77.253:81/mjpg/video.mjpg", [], {})
+        """
     def layout_mosaico(self):
         global all_dispositivos_widget
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -1681,7 +1707,7 @@ class ConfigurarDispositivo(QDialog):
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
         if self.checkBox_IP.isChecked():
-            device = self.ip_line_edit.text()
+            device = self.ip_line_edit.text().strip()
             if device in self.dispositivo_dict.keys():
                 QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
                 return
@@ -1738,7 +1764,184 @@ class ConfigurarDispositivo(QDialog):
             self.device_combo_box.show()
             self.atualizar_dispositivos_button.show()
 
+class EmailDialog(QDialog):
+    def __init__(self, parent=None, emails = []):
+        super(EmailDialog, self).__init__(parent)
+        self.setWindowTitle("Gerenciar Emails")
+        self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
+        self.parent = parent
+        self.layout = QVBoxLayout(self)
 
+        self.email_list_label = QLabel("Emails:", self)
+        self.layout.addWidget(self.email_list_label)
+
+        self.email_list = QListWidget(self)
+        self.email_list.setStyleSheet("font-size: 16px;")
+        self.layout.addWidget(self.email_list)
+
+        self.email_input_label = QLabel("Email:", self)
+        self.layout.addWidget(self.email_input_label)
+
+        self.email_input = QLineEdit(self)
+        self.email_input.setStyleSheet("font-size: 16px;")
+        self.layout.addWidget(self.email_input)
+
+        buttons_layout = QHBoxLayout()
+
+        self.add_button = DarkButton("Adicionar Email")
+        self.add_button.clicked.connect(self.add_email)
+        buttons_layout.addWidget(self.add_button)
+
+        self.remove_button = DarkButton("Remover Email")
+        self.remove_button.clicked.connect(self.remove_email)
+        buttons_layout.addWidget(self.remove_button)
+
+        self.layout.addLayout(buttons_layout)
+        if emails:
+            self.email_list.addItems(emails)
+
+    def add_email(self):
+        email = self.email_input.text()
+        if email:
+            self.email_list.addItem(email)
+            self.email_input.clear()
+
+    def remove_email(self):
+        selected_items = self.email_list.selectedItems()
+        if not selected_items:
+            return
+        for item in selected_items:
+            self.email_list.takeItem(self.email_list.row(item))
+
+    def closeEvent(self, a0):
+        self.send_emails()
+        super().closeEvent(a0)
+
+    def send_emails(self):
+        emails = []
+        for index in range(self.email_list.count()):
+            displayed_email = self.email_list.item(index).text()
+            emails.append(displayed_email)
+        self.parent.email_changed(emails)
+
+global_country_codes = []
+class PhoneDialog(QDialog):
+    def __init__(self, parent=None, phone_numbers = []):
+        super(PhoneDialog, self).__init__(parent)
+        self.setWindowTitle("Adicionar Números de Telefone")
+        self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
+        self.parent = parent
+        self.layout = QVBoxLayout(self)
+
+        self.phone_list_label = QLabel("Telefones:", self)
+        self.layout.addWidget(self.phone_list_label)
+
+        self.phone_list = QListWidget(self)
+        self.phone_list.setStyleSheet("font-size: 16px;")
+        self.layout.addWidget(self.phone_list)
+
+        hbox = QHBoxLayout()
+
+        self.phone_input_label = QLabel("Telefone:", self)
+        hbox.addWidget(self.phone_input_label)
+
+        self.country_code_selector = QComboBox(self)
+        combo_style = """
+                    QComboBox {
+                        font-size: 16px;
+                        background-color: #D9D9D9;
+                        color: #000000;
+                        border: none;
+                        border-radius: 5px;
+                        padding: 2px;
+                    }
+                    QComboBox::drop-down {
+                        border: 0px;
+                        background-color: #D9D9D9;
+                        margin-right: 20px;
+                    }
+                    QComboBox::down-arrow {
+                        image: url(icons/dropdown.png);
+                        width: 10px;
+                        height: 10px;
+                    }
+                    QComboBox::item {
+                        background-color: #5B5B5B;
+                        color: #FFFFFF;
+                    }
+                    QComboBox::item:!selected {
+                        background-color: #D9D9D9;
+                        color: #000000;
+                    }   
+                """
+        self.country_code_selector.setStyleSheet(combo_style)
+
+        if not global_country_codes:
+            self.populate_country_codes()
+        else:
+            self.country_code_selector.addItems(global_country_codes)
+        self.country_code_selector.setCurrentIndex(68)
+        self.country_code_selector.setFixedWidth(100)  # Set a fixed width for the combobox
+        hbox.addWidget(self.country_code_selector)
+
+        self.phone_input = QLineEdit(self)
+        self.phone_input.setStyleSheet("font-size: 16px;")
+        hbox.addWidget(self.phone_input)
+
+        self.layout.addLayout(hbox)
+
+        buttons_layout = QHBoxLayout()
+
+        self.add_button = DarkButton("Adicionar Número de Telefone")
+        self.add_button.clicked.connect(self.add_phone_number)
+        buttons_layout.addWidget(self.add_button)
+
+        self.remove_button = DarkButton("Remover Número de Telefone")
+        self.remove_button.clicked.connect(self.remove_phone_number)
+        buttons_layout.addWidget(self.remove_button)
+
+        self.layout.addLayout(buttons_layout)
+
+        if phone_numbers:
+            self.phone_list.addItems(phone_numbers)
+    def populate_country_codes(self):
+        global global_country_codes
+        country_codes = []
+        combo_items = []
+        for region_code in phonenumbers.SUPPORTED_REGIONS:
+            country_code = phonenumbers.country_code_for_region(region_code)
+            countre_name = phonenumbers.phonenumberutil.region_code_for_country_code(country_code)
+            if country_code not in country_codes:
+                combo_items.append(f"+{country_code} {countre_name}")
+            country_codes.append(country_code)
+        combo_items.sort()
+        global_country_codes = combo_items
+        self.country_code_selector.addItems(combo_items)
+
+    def add_phone_number(self):
+        phone_number = self.phone_input.text()
+        country_code = self.country_code_selector.currentText().split(' ')[0]
+        if phone_number:
+            self.phone_list.addItem(f"{country_code} {phone_number}")
+            self.phone_input.clear()
+
+    def remove_phone_number(self):
+        selected_items = self.phone_list.selectedItems()
+        if not selected_items:
+            return
+        for item in selected_items:
+            self.phone_list.takeItem(self.phone_list.row(item))
+
+    def closeEvent(self, a0):
+        self.send_phone_numbers()
+        super().closeEvent(a0)
+
+    def send_phone_numbers(self):
+        phone_numbers = []
+        for index in range(self.phone_list.count()):
+            displayed_phone_number = self.phone_list.item(index).text()
+            phone_numbers.append(displayed_phone_number)
+        self.parent.phone_numbers_changed(phone_numbers)
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -1791,8 +1994,10 @@ class MainWindow(QWidget):
         # Adicionando a barra de menu
         self.menu_bar = QMenuBar(self)
         file_menu = self.menu_bar.addMenu('File')
-        edit_menu = self.menu_bar.addMenu('Edit')
+        preferences_menu = self.menu_bar.addMenu('Preferences')
         help_menu = self.menu_bar.addMenu('Help')
+        self.phone_numbers = []
+        self.emails = []
 
         # Adicionando ações ao menu File
         open_action = QAction('Open', self)
@@ -1808,6 +2013,15 @@ class MainWindow(QWidget):
         file_menu.addAction(save_action)
         file_menu.addAction(save_as_action)
         file_menu.addAction(exit_action)
+
+        # Adicionando ações ao menu Preferences
+        email_action = QAction('Emails to send alert', self)
+        email_action.triggered.connect(self.email_config)
+        phone_action = QAction('Phone numbers to send alert', self)
+        phone_action.triggered.connect(self.phone_config)
+
+        preferences_menu.addAction(email_action)
+        preferences_menu.addAction(phone_action)
 
         main_layout.setMenuBar(self.menu_bar)
 
@@ -1882,6 +2096,23 @@ class MainWindow(QWidget):
             with open(file_name, 'w') as file:
                 json.dump(self.dispositivos_window.to_dict(), file)
 
+    def email_config(self):
+        email_dialog = EmailDialog(self, self.emails)
+        email_dialog.exec_()
+
+    def phone_config(self):
+        phone_dialog = PhoneDialog(self, self.phone_numbers)
+        phone_dialog.exec_()
+
+    def phone_numbers_changed(self, phone_numbers):
+        phone_numbers = [phone_number.replace(' ', '') for phone_number in phone_numbers]
+        self.phone_numbers = phone_numbers
+        yoloScript.phone_numbers_to_send_alert(phone_numbers)
+
+    def email_changed(self, emails):
+        self.emails = emails
+        yoloScript.emails_to_send_alert(emails)
+
     def closeEvent(self, event):
         if len(all_dispositivos_widget) > 0 and (
                 self.file_name is None or self.devices_hash != self.hash_dict(self.dispositivos_window.to_dict())):
@@ -1949,12 +2180,13 @@ class MainWindow(QWidget):
             elif reply == QMessageBox.No:
                 for widget in all_dispositivos_widget:
                     widget.remove_button_clicked()
+                self.dispositivos_window.queue.put(-1)
                 event.accept()
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget:
                 widget.remove_button_clicked()
             event.accept()
-
+        self.dispositivos_window.queue.put(-1)
     @staticmethod
     def hash_dict(d):
         dict_str = json.dumps(d, sort_keys=True)
