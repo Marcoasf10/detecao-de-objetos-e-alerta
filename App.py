@@ -682,7 +682,7 @@ class DispositivosWindow(QWidget):
             self.reading = True
 
     def runscript_thread(self, device, objToFind, alertas_dict):
-        yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10)
+        yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10,True)
 
     def readQueue(self):
         while True:
