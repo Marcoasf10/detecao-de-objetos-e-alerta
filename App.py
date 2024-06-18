@@ -682,7 +682,7 @@ class DispositivosWindow(QWidget):
             self.reading = True
 
     def runscript_thread(self, device, objToFind, alertas_dict):
-        yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10,True)
+        yoloScript.addDispositivoToPredict(device, objToFind, alertas_dict, self.queue, 10)
 
     def readQueue(self):
         while True:
@@ -1767,7 +1767,7 @@ class ConfigurarDispositivo(QDialog):
 class EmailDialog(QDialog):
     def __init__(self, parent=None, emails = []):
         super(EmailDialog, self).__init__(parent)
-        self.setWindowTitle("Gerenciar Emails")
+        self.setWindowTitle("Gerir Emails")
         self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
         self.parent = parent
         self.layout = QVBoxLayout(self)
@@ -1828,12 +1828,12 @@ global_country_codes = []
 class PhoneDialog(QDialog):
     def __init__(self, parent=None, phone_numbers = []):
         super(PhoneDialog, self).__init__(parent)
-        self.setWindowTitle("Adicionar Números de Telefone")
+        self.setWindowTitle("Adicionar Números de Telemovel")
         self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
         self.parent = parent
         self.layout = QVBoxLayout(self)
 
-        self.phone_list_label = QLabel("Telefones:", self)
+        self.phone_list_label = QLabel("Telemovel:", self)
         self.layout.addWidget(self.phone_list_label)
 
         self.phone_list = QListWidget(self)
