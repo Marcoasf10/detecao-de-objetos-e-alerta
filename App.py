@@ -830,13 +830,12 @@ class AlertaWidget(QWidget):
         self.remove_button.setFixedSize(25, 25)
         self.remove_button.clicked.connect(self.remove_button_clicked)
         top_layout.addWidget(self.remove_button, 0, 0, Qt.AlignTop | Qt.AlignRight)
-
         # Layout horizontal para o restante do conteúdo
         self.item_layout = QHBoxLayout()
         main_layout.addLayout(self.item_layout)
 
         # Adiciona o texto à esquerda
-        self.texto_esquerda = QLabel(alerta.get_descricao())
+        self.texto_esquerda = QLabel(f"Dispositivo {alerta.device}\n\n{alerta.get_descricao()}")
         self.texto_esquerda.setStyleSheet("font-size: 16px; color: #FFFFFF")
         self.item_layout.addWidget(self.texto_esquerda)
 
