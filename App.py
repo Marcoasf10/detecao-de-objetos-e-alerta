@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import json
+import math
 import os
 import sys
 import time
@@ -87,14 +88,39 @@ class MosaicoLayout(QWidget):
     def __init__(self):
         super().__init__()
         self.layout = QGridLayout(self)
-        self.num_devices = 0
 
-    def addWidget(self, widget):
-        widget.setMaximumSize(400, 400)
-        row = self.num_devices // 3
-        col = self.num_devices % 3
-        self.layout.addWidget(widget, row, col)
-        self.num_devices += 1
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+
+        self.scroll_content = QWidget(self.scroll_area)
+        self.scroll_content.setLayout(self.layout)
+
+        self.scroll_area.setWidget(self.scroll_content)
+
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.addWidget(self.scroll_area)
+        self.setLayout(self.main_layout)
+        self.setStyleSheet("background-color: #292929;border:0px;")
+        self.num_devices = 0
+        self.widgets = []
+    def updateWidgets(self, widgets):
+
+        self.num_devices = len(widgets)
+
+        for widget in self.widgets:
+            self.layout.removeWidget(widget)
+
+        matrix_size = math.ceil(math.sqrt(self.num_devices))
+
+        x = 0
+        for i in range(matrix_size):
+            for j in range(matrix_size):
+                if x < self.num_devices:
+                    widgets[x].setMaximumSize(400, 400)
+                    self.layout.addWidget(widgets[x], i, j)
+                    x += 1
+
+        self.widgets = widgets
 
     def removeWidget(self, widget):
         self.layout.removeWidget(widget)
@@ -521,8 +547,8 @@ class DispositivoWidget(QWidget):
 
     def remove_button_clicked(self):
         yoloScript.remove_device(self.device)
-        self.dispositivos_window.remove_device(self.device)
         all_dispositivos_widget.remove(self)
+        self.dispositivos_window.remove_device(self.device)
         if self.image_window is not None:
             self.image_window.hide()
             self.image_window.close()
@@ -651,7 +677,7 @@ class DispositivosWindow(QWidget):
         self.stacked_layout.setCurrentIndex(1)
         for widget in all_dispositivos_widget:
             self.horizontal_layout.removeWidget(widget)
-            self.mosaico_layout.addWidget(widget)
+        self.mosaico_layout.updateWidgets(all_dispositivos_widget)
 
     def layout_horizontal(self):
         self.horizontalbutton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -659,8 +685,8 @@ class DispositivosWindow(QWidget):
         self.horizontalbutton.setEnabled(False)
         self.mosaicoButton.setEnabled(True)
         self.stacked_layout.setCurrentIndex(0)
+        self.mosaico_layout.updateWidgets(all_dispositivos_widget)
         for widget in all_dispositivos_widget:
-            self.mosaico_layout.removeWidget(widget)
             self.horizontal_layout.addWidget(widget)
 
     def add_dispositivo(self, name, device, objToFind, lista_alertas):
@@ -669,7 +695,7 @@ class DispositivosWindow(QWidget):
         all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
         if self.stacked_layout.currentIndex() == 1:
-            self.mosaico_layout.addWidget(dispositivo_widget)
+            self.mosaico_layout.updateWidgets(all_dispositivos_widget)
         if self.stacked_layout.currentIndex() == 0:
             self.horizontal_layout.addWidget(dispositivo_widget)
         thread = Thread(target=self.runscript_thread, args=(device, objToFind, lista_alertas))
@@ -715,6 +741,8 @@ class DispositivosWindow(QWidget):
         self.add_dispositivo(name, device, selected_items, lista_alertas)
 
     def remove_device(self, device):
+        if self.stacked_layout.currentIndex() == 1:
+            self.mosaico_layout.updateWidgets(all_dispositivos_widget)
         del self.dispositivos_dict[device]
 
     def to_dict(self):
@@ -1347,19 +1375,14 @@ class CustomWidget(QWidget):
         times = self.change_times(self.times, unit)
         self.update_combo_box(times, unit)
 
+
     def change_times(self, times, unit):
         if unit == "segundos":
             return times
         elif unit == "minutos":
-            times = []
-            for i in range(0, 60, 1):
-                times.append(i)
-            return times
+            return list(range(60))
         elif unit == "horas":
-            times = []
-            for i in range(0, 24, 1):
-                times.append(i)
-            return times
+            return list(range(24))
 
     def update_combo_box(self, times, unit):
         self.combo_box.clear()
@@ -1619,7 +1642,7 @@ class ConfigurarDispositivo(QDialog):
         middle_layout.addWidget(self.objetos_alerta, alignment=Qt.AlignCenter)
         self.vertical_right_layout.addLayout(middle_layout)
         label = QLabel(
-            "Nesta janela pode definir o tempo de inatividade para cada objeto antes que um alerta seja emitido.")
+            "Nesta janela pode definir o tempo de inatividade para cada objeto antes que um alerta seja emitido. A unidade a 0 significa que o objeto não emite alerta")
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignCenter)
         self.vertical_right_layout.addWidget(label, alignment=Qt.AlignBottom | Qt.AlignHCenter)
@@ -1705,6 +1728,9 @@ class ConfigurarDispositivo(QDialog):
 
     def on_done_clicked(self):
         name = self.nomeLineEdit.text()
+        if name == "":
+            QMessageBox.warning(self, "Erro", "Introduza um nome para o dispositivo.")
+            return
         if self.checkBox_IP.isChecked():
             device = self.ip_line_edit.text().strip()
             if device in self.dispositivo_dict.keys():
