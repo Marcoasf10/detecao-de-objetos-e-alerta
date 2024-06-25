@@ -91,6 +91,21 @@ class MosaicoLayout(QWidget):
 
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.verticalScrollBar().setStyleSheet("""
+                            QScrollBar:vertical {
+                                width: 15px;
+                            }
+                            QScrollBar::handle:vertical {
+                                background-color: #5B5B5B;
+                                border-radius: 7px;
+                            }
+                            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                                background: #292929; /* Background color of the track */
+                            }
+                            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                                height: 0px;
+                            }
+                        """)
 
         self.scroll_content = QWidget(self.scroll_area)
         self.scroll_content.setLayout(self.layout)
@@ -776,11 +791,14 @@ class AlertaDetalhes(QMainWindow):
 
         # Label para a imagem
         self.image_label = QLabel()
+
         height, width, channel = frame.shape
         bytes_per_line = 3 * width
         img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
+        max_size = self.size()
+        pixmap = pixmap.scaled(max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.image_label.setPixmap(pixmap)
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setScaledContents(True)  # Para redimensionar a imagem para o tamanho do QLabel
