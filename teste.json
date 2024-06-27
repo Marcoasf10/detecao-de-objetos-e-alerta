@@ -1,1 +1,1 @@
-{"devices": [{"name": "", "device": 0, "objs": [], "alerts": {}}]}
+{"devices": [{"name": "1", "device": 0, "objs": ["person"], "alerts": {"person": 0}}]}

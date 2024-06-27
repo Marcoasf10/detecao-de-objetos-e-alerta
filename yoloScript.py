@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import shutil
 import datetime
 
+import App
+
 modelo = 'yolov8s'
 model = YOLO(modelo)
 retrieved_frames = {}
@@ -352,6 +354,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
     subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
         device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
+    App.SplashScreen.show_notification(subject)
     with emails_alert_lock:
         for email in emails_alert:
             send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email,"alert@safeSight.com")

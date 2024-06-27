@@ -142,10 +142,11 @@ class MosaicoLayout(QWidget):
         if self.num_devices > 0:
             self.num_devices -= 1
 
-
+myAppGlobal = None
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
+        self.myApp = None
         self.setWindowTitle('Splash Screen')
         self.setFixedSize(1100, 500)
         self.setWindowFlag(Qt.FramelessWindowHint)
@@ -260,7 +261,6 @@ class SplashScreen(QWidget):
 
     def loading(self):
         self.progressBar.setValue(self.counter)
-
         if self.counter == int(self.n * 0.3):
             self.labelDescription.setText('<strong>A carregar os alertas</strong>')
         elif self.counter == int(self.n * 0.6):
@@ -273,8 +273,10 @@ class SplashScreen(QWidget):
 
             self.myApp = MainWindow()
             self.myApp.show()
-
         self.counter += 1
+
+    def show_notification(self, message):
+        self.myApp.alert_notification(message)
 
 
 class LightButton(QPushButton):
@@ -2097,6 +2099,9 @@ class MainWindow(QWidget):
         # Definindo a página inicial como Dispositivos
         self.show_dispositivos()
 
+    def alert_notification(self, message):
+        QMessageBox.information(self, "Alerta", message)
+
     def show_dispositivos(self):
         self.stacked_layout.setCurrentIndex(0)
         self.dispositivos_button.setStyleSheet(
@@ -2150,7 +2155,7 @@ class MainWindow(QWidget):
     def phone_numbers_changed(self, phone_numbers):
         phone_numbers = [phone_number.replace(' ', '') for phone_number in phone_numbers]
         self.phone_numbers = phone_numbers
-        yoloScript.phone_numbers_to_send_alert(phone_numbers)
+        yoloScript.phone_numbenotirs_to_send_alert(phone_numbers)
 
     def email_changed(self, emails):
         self.emails = emails
@@ -2236,11 +2241,15 @@ class MainWindow(QWidget):
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
 
+def show_notification(message):
+    global myAppGlobal
+    myAppGlobal.myApp.alert_notification(message)
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication([])
     window = SplashScreen()
+    myAppGlobal = window
     window.setStyleSheet('''
                #LabelTitle {
                    font-size: 60px;
