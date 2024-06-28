@@ -18,7 +18,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
     QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem, QDateEdit, QGraphicsOpacityEffect
 from PyQt5 import QtCore
-from pyqttoast import Toast, ToastPreset, ToastPosition
 import yoloScript
 import multiprocessing
 import pickle
@@ -2309,23 +2308,23 @@ class MainWindow(QWidget):
                     self.save_as_files()
                     if self.file_name is not None:
                         event.ignore()
-                    for widget in all_dispositivos_widget:
+                    for widget in all_dispositivos_widget[:]:
                         widget.remove_button_clicked()
                     event.accept()
                 else:
                     self.save_files()
-                    for widget in all_dispositivos_widget:
+                    for widget in all_dispositivos_widget[:]:
                         widget.remove_button_clicked()
                     event.accept()
             elif reply == QMessageBox.Cancel:
                 event.ignore()
             elif reply == QMessageBox.No:
-                for widget in all_dispositivos_widget:
+                for widget in all_dispositivos_widget[:]:
                     widget.remove_button_clicked()
                 self.dispositivos_window.queue.put(-1)
                 event.accept()
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
-            for widget in all_dispositivos_widget:
+            for widget in all_dispositivos_widget[:]:
                 widget.remove_button_clicked()
             super().close()
             event.accept()
