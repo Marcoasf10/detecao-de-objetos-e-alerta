@@ -2191,6 +2191,8 @@ class MainWindow(QWidget):
 
     def alert_notification(self, message):
         toast = ToastNotification("ALERTA GERADO", message, 5000, self)
+        if self.stacked_layout.currentIndex() == 1:
+            self.alertas_window.carregar_alertas()
         toast.showNotification()
 
 
