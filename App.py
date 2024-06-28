@@ -278,7 +278,6 @@ class SplashScreen(QWidget):
     def show_notification(self, message):
         self.myApp.alert_notification(message)
 
-
 class LightButton(QPushButton):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
