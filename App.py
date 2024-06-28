@@ -11,13 +11,14 @@ import phonenumbers
 from phonenumbers import PhoneMetadata
 import cv2
 import numpy as np
-from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread,QDate
+from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread, QDate, QPoint, QPropertyAnimation
 from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
-    QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem, QDateEdit
+    QDesktopWidget, QMenuBar, QAction, QFileDialog, QSpacerItem, QDateEdit, QGraphicsOpacityEffect
 from PyQt5 import QtCore
+from pyqttoast import Toast, ToastPreset, ToastPosition
 import yoloScript
 import multiprocessing
 import pickle
@@ -142,7 +143,6 @@ class MosaicoLayout(QWidget):
         if self.num_devices > 0:
             self.num_devices -= 1
 
-myAppGlobal = None
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
@@ -274,9 +274,6 @@ class SplashScreen(QWidget):
             self.myApp = MainWindow()
             self.myApp.show()
         self.counter += 1
-
-    def show_notification(self, message):
-        self.myApp.alert_notification(message)
 
 
 class LightButton(QPushButton):
@@ -606,8 +603,10 @@ class StyledScrollBar(QScrollBar):
 
 
 class DispositivosWindow(QWidget):
-    def __init__(self):
+    alertReceived = pyqtSignal(str)
+    def __init__(self, parent=None):
         super().__init__()
+        self.main_window = parent
         self.setWindowTitle("Dispositivos")
         self.stacked_layout = QStackedLayout()
         self.horizontal_layout = HorizontalLayout()
@@ -734,12 +733,13 @@ class DispositivosWindow(QWidget):
                 if frames == -1:
                     break
                 for device, frame in frames.items():
+                    if device == -2:
+                        self.alertReceived.emit(frame)
+                        continue
                     if device in self.dispositivos_dict.keys():
                         self.dispositivos_dict[device].update_image(frame)
-                    if self.image_window is not None:
-                        self.image_window.update_image(frame)
-            except self.queue.empty:
-                print("Queue is empty.")
+                        if self.image_window is not None:
+                            self.image_window.update_image(frame)
             except Exception as e:
                 print(f"Error reading queue: {e}")
 
@@ -774,7 +774,6 @@ class DispositivosWindow(QWidget):
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
             self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
-
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
@@ -1987,6 +1986,96 @@ class PhoneDialog(QDialog):
             displayed_phone_number = self.phone_list.item(index).text()
             phone_numbers.append(displayed_phone_number)
         self.parent.phone_numbers_changed(phone_numbers)
+
+class ToastNotification(QWidget):
+    active_toasts = []
+
+    def __init__(self, title, message, duration=2000, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.title = title
+        self.message = message
+        self.duration = duration
+
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        # Main container widget with background color
+        container = QWidget()
+        container.setStyleSheet("background-color: #B8860B; border-radius: 10px;")
+        container_layout = QVBoxLayout(container)
+
+        # Horizontal layout for title and icon
+        title_layout = QHBoxLayout()
+
+        # Title label
+        self.title_label = QLabel(self.title)
+        self.title_label.setStyleSheet("color: black; font-weight: bold; padding-bottom: 5px;")
+        title_layout.addWidget(self.title_label)
+
+        # Warning icon label
+        warning_pixmap = QPixmap('icons/warning.png')  # Replace with your warning icon path
+        self.warning_icon_label = QLabel()
+        self.warning_icon_label.setPixmap(warning_pixmap.scaledToWidth(16, Qt.SmoothTransformation))  # Adjust size as needed
+        self.warning_icon_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        title_layout.addWidget(self.warning_icon_label)
+
+        container_layout.addLayout(title_layout)
+
+        # Message label
+        self.message_label = QLabel(self.message)
+        self.message_label.setStyleSheet("color: black; padding: 10px;")
+        container_layout.addWidget(self.message_label)
+
+        layout.addWidget(container)
+        self.setLayout(layout)
+        self.adjustSize()
+
+        self.opacity_animation = QPropertyAnimation(self, b"windowOpacity")
+        self.opacity_animation.setDuration(500)
+        self.opacity_animation.setStartValue(0.0)
+        self.opacity_animation.setEndValue(1.0)
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.start_fade_out)
+
+    def start_fade_out(self):
+        self.opacity_animation.setDirection(QPropertyAnimation.Backward)
+        self.opacity_animation.start()
+        self.opacity_animation.finished.connect(self.close)
+
+    def showNotification(self):
+        if not self.isVisible():
+            self.opacity_animation.setDirection(QPropertyAnimation.Forward)
+            self.opacity_animation.start()
+            self.timer.start(self.duration)
+            self.show()
+
+            ToastNotification.active_toasts.append(self)
+            self.move_to_free_space()
+
+    def move_to_free_space(self):
+        parent_rect = self.parent().geometry()
+        bottom_margin = 10
+        x_margin = 10
+        y = parent_rect.bottom() - bottom_margin - self.height()
+        x = parent_rect.right() - x_margin - self.width()
+
+        for toast in ToastNotification.active_toasts:
+            if toast is not self:
+                current_geometry = QRect(toast.geometry())
+                if current_geometry.intersects(QRect(QPoint(x, y), self.sizeHint())):
+                    y -= current_geometry.height() + bottom_margin
+
+        self.move(QPoint(x, y))
+
+    def closeEvent(self, event):
+        if self in ToastNotification.active_toasts:
+            ToastNotification.active_toasts.remove(self)
+        event.accept()
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -2088,7 +2177,8 @@ class MainWindow(QWidget):
         main_layout.addLayout(self.button_layout)
 
         self.stacked_layout = QStackedLayout()
-        self.dispositivos_window = DispositivosWindow()
+        self.dispositivos_window = DispositivosWindow(self)
+        self.dispositivos_window.alertReceived.connect(self.alert_notification)
         self.alertas_window = AlertasWindow()
         self.stacked_layout.addWidget(self.dispositivos_window)
         self.stacked_layout.addWidget(self.alertas_window)
@@ -2100,7 +2190,9 @@ class MainWindow(QWidget):
         self.show_dispositivos()
 
     def alert_notification(self, message):
-        QMessageBox.information(self, "Alerta", message)
+        toast = ToastNotification("ALERTA GERADO", message, 5000, self)
+        toast.showNotification()
+
 
     def show_dispositivos(self):
         self.stacked_layout.setCurrentIndex(0)
@@ -2233,6 +2325,7 @@ class MainWindow(QWidget):
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget:
                 widget.remove_button_clicked()
+            super().close()
             event.accept()
         self.dispositivos_window.queue.put(-1)
     @staticmethod
@@ -2241,15 +2334,10 @@ class MainWindow(QWidget):
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
 
-def show_notification(message):
-    global myAppGlobal
-    myAppGlobal.myApp.alert_notification(message)
-
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication([])
     window = SplashScreen()
-    myAppGlobal = window
     window.setStyleSheet('''
                #LabelTitle {
                    font-size: 60px;

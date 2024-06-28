@@ -219,7 +219,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
                         if time.time() - tempo_last >= tempo_alerta != 0:
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[device][id][classe_obj] = time.time()
-                            alerta = criar_alerta(device, classe_obj, frame, tempo_alerta)
+                            alerta = criar_alerta(device, classe_obj, frame, tempo_alerta, queue)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
@@ -324,7 +324,7 @@ def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
 
 
-def criar_alerta(device, classe_obj, frame, tempo_alerta):
+def criar_alerta(device, classe_obj, frame, tempo_alerta, queue):
     time_struct = time.localtime(time.time())
     formatted_time = time.strftime('%d/%m/%Y', time_struct)
     if tempo_alerta >= 3600:
@@ -352,9 +352,12 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta):
     alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
     time_struct = time.localtime(timestamp)
     data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
-    subject = "Alerta gerado pelo sistema de monitorização.\n Dispositivo: " + str(
+    subject = "Alerta gerado pelo sistema de monitorização.\nDispositivo: " + str(
         device) + "\n" + "Classe: " + classe_obj + "\n" + "Data: " + data + "\n" + "Tempo Parado: " + tempo_alerta_str + "\n"
-    App.SplashScreen.show_notification(subject)
+    alerta_notiication = "Alerta gerado pelo sistema de monitorização.\nDispositivo: " + str(
+        device) + "\t" + "Classe: " + classe_obj + "\n" "Tempo Parado: " + tempo_alerta_str
+
+    queue.put({-2: alerta_notiication})
     with emails_alert_lock:
         for email in emails_alert:
             send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email,"alert@safeSight.com")
