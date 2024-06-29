@@ -2221,14 +2221,19 @@ class MainWindow(QWidget):
                 try:
                     self.dispositivos_window.from_dict(data)
                     self.file_name = file_name
-                    self.devices_hash = self.hash_dict(self.dispositivos_window.to_dict())
+                    self.email_changed(data["emails"])
+                    self.phone_numbers_changed(data["phone_numbers"])
+                    self.devices_hash = self.hash_dict(data)
                 except:
                     QMessageBox.critical(self, "Erro", "Erro ao carregar os dispositivos do ficheiro")
 
     def save_files(self):
         if self.file_name:
+            data = self.dispositivos_window.to_dict()
+            data['emails'] = self.emails
+            data['phone_numbers'] = self.phone_numbers
             with open(self.file_name, 'w') as file:
-                json.dump(self.dispositivos_window.to_dict(), file)
+                json.dump(data, file, indent=4)
         else:
             self.save_as_files()
 
@@ -2236,7 +2241,10 @@ class MainWindow(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", "JSON Files (*.json);;All Files (*)")
         if file_name:
             with open(file_name, 'w') as file:
-                json.dump(self.dispositivos_window.to_dict(), file)
+                data = self.dispositivos_window.to_dict()
+                data['emails'] = self.emails
+                data['phone_numbers'] = self.phone_numbers
+                json.dump(data, file)
 
     def email_config(self):
         email_dialog = EmailDialog(self, self.emails)
@@ -2249,15 +2257,18 @@ class MainWindow(QWidget):
     def phone_numbers_changed(self, phone_numbers):
         phone_numbers = [phone_number.replace(' ', '') for phone_number in phone_numbers]
         self.phone_numbers = phone_numbers
-        yoloScript.phone_numbenotirs_to_send_alert(phone_numbers)
+        yoloScript.phone_numbers_to_send_alert(phone_numbers)
 
     def email_changed(self, emails):
         self.emails = emails
         yoloScript.emails_to_send_alert(emails)
 
     def closeEvent(self, event):
+        data = self.dispositivos_window.to_dict()
+        data['emails'] = self.emails
+        data['phone_numbers'] = self.phone_numbers
         if len(all_dispositivos_widget) > 0 and (
-                self.file_name is None or self.devices_hash != self.hash_dict(self.dispositivos_window.to_dict())):
+                self.file_name is None or self.devices_hash != self.hash_dict(data)):
             msg_box = QMessageBox(self)
             msg_box.setIcon(QMessageBox.Question)
             msg_box.setWindowTitle("Message")

@@ -360,7 +360,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta, queue):
     queue.put({-2: alerta_notiication})
     with emails_alert_lock:
         for email in emails_alert:
-            send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email,"alert@safeSight.com")
+            send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email)
     with phone_numbers_alert_lock:
         for phone_number in phone_numbers_alert:
             print(phone_number)
@@ -369,8 +369,10 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta, queue):
     return alerta
 
 
-def send_email(subject, body, to_email, from_email):
+def send_email(subject, body, to_email):
     msg = MIMEMultipart()
+    from_email = "safesight9195@gmail.com"
+    password = "gvwu kvox ralt vmeu"
     msg['From'] = from_email
     msg['To'] = to_email
     msg['Subject'] = subject
@@ -379,11 +381,12 @@ def send_email(subject, body, to_email, from_email):
 
     try:
         # Connect to the fakeSMTP server
-        server = smtplib.SMTP('localhost', 2525)
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(from_email, password)
         text = msg.as_string()
         server.sendmail(from_email, to_email, text)
-        server.quit()
         print("Email sent successfully!")
+        server.quit()
     except Exception as e:
         print(f"Failed to send email. Error: {str(e)}")
 
