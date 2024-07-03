@@ -118,29 +118,33 @@ class MosaicoLayout(QWidget):
         self.setStyleSheet("background-color: #292929;border:0px;")
         self.num_devices = 0
         self.widgets = []
-    def updateWidgets(self, widgets):
 
+    def updateWidgets(self, widgets):
         self.num_devices = len(widgets)
 
+        # Remove old widgets from the layout
         for widget in self.widgets:
             self.layout.removeWidget(widget)
-
-        matrix_size = math.ceil(math.sqrt(self.num_devices))
-
-        x = 0
-        for i in range(matrix_size):
-            for j in range(matrix_size):
-                if x < self.num_devices:
-                    widgets[x].setMaximumSize(400, 400)
-                    self.layout.addWidget(widgets[x], i, j)
-                    x += 1
+            widget.setParent(None)
 
         self.widgets = widgets
+        self.adjustWidgets()
 
-    def removeWidget(self, widget):
-        self.layout.removeWidget(widget)
-        if self.num_devices > 0:
-            self.num_devices -= 1
+    def adjustWidgets(self):
+        width = self.scroll_area.viewport().width()
+        columns = max(1, width // 400)  # Number of widgets per row, assuming each widget max width is 400
+
+        x = 0
+        for i in range((self.num_devices + columns - 1) // columns):  # Calculate the number of rows needed
+            for j in range(columns):
+                if x < self.num_devices:
+                    self.widgets[x].setMaximumSize(400, 400)
+                    self.layout.addWidget(self.widgets[x], i, j)
+                    x += 1
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.adjustWidgets()
 
 class SplashScreen(QWidget):
     def __init__(self):
@@ -436,11 +440,44 @@ class DispositivoWidget(QWidget):
             QComboBox::item:!selected {
                 background-color: #D9D9D9;
                 color: #000000;
-            }   
+            }
+            QMessageBox {
+                background-color: #4e4e4e; /* Light background color */
+            }
+            QMessageBox QLabel {
+                color: white;
+            }
+            QAbstractButton {
+                background-color: #292929; /* Darker color for buttons */
+                color: white;
+                border-radius: 10px; /* Rounded borders */
+                padding: 5px 10px;
+            }
+            QAbstractButton:hover {
+                background-color: #3d3d3d; /* Slightly lighter on hover */
+            }
+            StandardButton {
+                background-color: #292929; /* Darker color for buttons */
+                color: white;
+                border-radius: 10px; /* Rounded borders */
+                padding: 5px 10px;
+            }
+            StandardButton:hover {
+                background-color: #3d3d3d;
+            }
+            QPushButton {
+                background-color: #292929;
+                color: white;
+                border-radius: 10px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #3d3d3d;
+            }
         """
         self.combo_delay.setStyleSheet(combo_style)
         self.populate_combo_delay()
-        self.combo_delay.currentIndexChanged.connect(self.change_delay)
+        self.combo_delay.currentIndexChanged.connect(self.start_button_clicked)
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.live_button)
@@ -559,6 +596,17 @@ class DispositivoWidget(QWidget):
         yoloScript.change_delay(self.device, delay)
 
     def remove_button_clicked(self):
+        reply = QMessageBox.question(
+            self,
+            'Confirmação',
+            'Tem a certeza que deseja remover o dispositivo?',
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if reply == QMessageBox.Yes:
+            self.remove_button_action()
+
+    def remove_button_action(self):
         yoloScript.remove_device(self.device)
         all_dispositivos_widget.remove(self)
         self.dispositivos_window.remove_device(self.device)
@@ -2320,23 +2368,23 @@ class MainWindow(QWidget):
                     if self.file_name is not None:
                         event.ignore()
                     for widget in all_dispositivos_widget[:]:
-                        widget.remove_button_clicked()
+                        widget.remove_button_action()
                     event.accept()
                 else:
                     self.save_files()
                     for widget in all_dispositivos_widget[:]:
-                        widget.remove_button_clicked()
+                        widget.remove_button_action()
                     event.accept()
             elif reply == QMessageBox.Cancel:
                 event.ignore()
             elif reply == QMessageBox.No:
                 for widget in all_dispositivos_widget[:]:
-                    widget.remove_button_clicked()
+                    widget.remove_button_action()
                 self.dispositivos_window.queue.put(-1)
                 event.accept()
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget[:]:
-                widget.remove_button_clicked()
+                widget.remove_button_action()
             super().close()
             event.accept()
         self.dispositivos_window.queue.put(-1)
