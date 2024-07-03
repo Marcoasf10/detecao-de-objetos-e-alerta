@@ -442,37 +442,16 @@ class DispositivoWidget(QWidget):
                 color: #000000;
             }
             QMessageBox {
-                background-color: #4e4e4e; /* Light background color */
+                 background-color: #5B5B5B;
+                 color: #000000;
             }
-            QMessageBox QLabel {
-                color: white;
-            }
-            QAbstractButton {
-                background-color: #292929; /* Darker color for buttons */
-                color: white;
-                border-radius: 10px; /* Rounded borders */
-                padding: 5px 10px;
-            }
-            QAbstractButton:hover {
-                background-color: #3d3d3d; /* Slightly lighter on hover */
-            }
-            StandardButton {
-                background-color: #292929; /* Darker color for buttons */
-                color: white;
-                border-radius: 10px; /* Rounded borders */
-                padding: 5px 10px;
-            }
-            StandardButton:hover {
-                background-color: #3d3d3d;
-            }
-            QPushButton {
-                background-color: #292929;
-                color: white;
+            QMessageBox QPushButton {
+                border: none;
                 border-radius: 10px;
-                padding: 5px 10px;
-            }
-            QPushButton:hover {
-                background-color: #3d3d3d;
+                font-size: 16px;
+                padding: 10px;
+                color: #FFFFFF;
+                background-color: #292929;
             }
         """
         self.combo_delay.setStyleSheet(combo_style)
@@ -596,13 +575,52 @@ class DispositivoWidget(QWidget):
         yoloScript.change_delay(self.device, delay)
 
     def remove_button_clicked(self):
-        reply = QMessageBox.question(
-            self,
-            'Confirmação',
-            'Tem a certeza que deseja remover o dispositivo?',
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setWindowTitle('Confirmação')
+        msg_box.setText('Tem a certeza que deseja remover o dispositivo?')
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+
+        # Estilizando a caixa de mensagem
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #4e4e4e; /* Light background color */
+            }
+            QMessageBox QLabel {
+                color: white;
+            }
+            QAbstractButton {
+                background-color: #292929; /* Darker color for buttons */
+                color: white;
+                border-radius: 10px; /* Rounded borders */
+                padding: 5px 10px;
+            }
+            QAbstractButton:hover {
+                background-color: #3d3d3d; /* Slightly lighter on hover */
+            }
+            StandardButton {
+                background-color: #292929; /* Darker color for buttons */
+                color: white;
+                border-radius: 10px; /* Rounded borders */
+                padding: 5px 10px;
+            }
+            StandardButton:hover {
+                background-color: #3d3d3d;
+            }
+            QPushButton {
+                background-color: #292929;
+                color: white;
+                border-radius: 10px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: #3d3d3d;
+            }
+    
+        """)
+
+        reply = msg_box.exec()
         if reply == QMessageBox.Yes:
             self.remove_button_action()
 
