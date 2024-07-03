@@ -146,6 +146,7 @@ class MosaicoLayout(QWidget):
         super().resizeEvent(event)
         self.adjustWidgets()
 
+
 class SplashScreen(QWidget):
     def __init__(self):
         super().__init__()
@@ -646,7 +647,7 @@ class DispositivoWidget(QWidget):
 
     @staticmethod
     def from_dict(data):
-        return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"])
+        return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"], self.dispositivos_window)
 
 
 class StyledScrollBar(QScrollBar):
@@ -669,6 +670,7 @@ class StyledScrollBar(QScrollBar):
 
 class DispositivosWindow(QWidget):
     alertReceived = pyqtSignal(str)
+
     def __init__(self, parent=None):
         super().__init__()
         self.main_window = parent
@@ -749,6 +751,7 @@ class DispositivosWindow(QWidget):
         self.add_dispositivo("Dispositivo 23", "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430", [], {})
         self.add_dispositivo("Dispositivo 24", "http://166.247.77.253:81/mjpg/video.mjpg", [], {})
         """
+
     def layout_mosaico(self):
         global all_dispositivos_widget
         self.mosaicoButton.setStyleSheet(self.mosaicoButton.styleSheet() + "QPushButton{background-color: #292929}")
@@ -839,6 +842,8 @@ class DispositivosWindow(QWidget):
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
             self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
+
+
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
@@ -1459,7 +1464,6 @@ class CustomWidget(QWidget):
         times = self.change_times(self.times, unit)
         self.update_combo_box(times, unit)
 
-
     def change_times(self, times, unit):
         if unit == "segundos":
             return times
@@ -1500,7 +1504,11 @@ class CustomWidget(QWidget):
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list, dict)
 
-    def __init__(self, name="", device="", objToFind=None, dispositivos_dict={}, alertas_dict={}, time_frame=10):
+    def __init__(self, name="", device="", objToFind=None, dispositivos_dict=None, alertas_dict=None, time_frame=10):
+        if dispositivos_dict is None:
+            dispositivos_dict = {}
+        if alertas_dict is None:
+            alertas_dict = {}
         if objToFind is None:
             objToFind = []
         super().__init__()
@@ -1873,9 +1881,12 @@ class ConfigurarDispositivo(QDialog):
             self.device_combo_box.show()
             self.atualizar_dispositivos_button.show()
 
+
 class EmailDialog(QDialog):
-    def __init__(self, parent=None, emails = []):
+    def __init__(self, parent=None, emails=None):
         super(EmailDialog, self).__init__(parent)
+        if emails is None:
+            emails = []
         self.setWindowTitle("Gerir Emails")
         self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
         self.parent = parent
@@ -1933,10 +1944,15 @@ class EmailDialog(QDialog):
             emails.append(displayed_email)
         self.parent.email_changed(emails)
 
+
 global_country_codes = []
+
+
 class PhoneDialog(QDialog):
-    def __init__(self, parent=None, phone_numbers = []):
+    def __init__(self, parent=None, phone_numbers=None):
         super(PhoneDialog, self).__init__(parent)
+        if phone_numbers is None:
+            phone_numbers = []
         self.setWindowTitle("Adicionar Números de Telemovel")
         self.setStyleSheet("background-color: #5B5B5B; color: white; font-size: 16px;")
         self.parent = parent
@@ -2013,6 +2029,7 @@ class PhoneDialog(QDialog):
 
         if phone_numbers:
             self.phone_list.addItems(phone_numbers)
+
     def populate_country_codes(self):
         global global_country_codes
         country_codes = []
@@ -2052,6 +2069,7 @@ class PhoneDialog(QDialog):
             phone_numbers.append(displayed_phone_number)
         self.parent.phone_numbers_changed(phone_numbers)
 
+
 class ToastNotification(QWidget):
     active_toasts = []
 
@@ -2084,7 +2102,8 @@ class ToastNotification(QWidget):
         # Warning icon label
         warning_pixmap = QPixmap('icons/warning.png')  # Replace with your warning icon path
         self.warning_icon_label = QLabel()
-        self.warning_icon_label.setPixmap(warning_pixmap.scaledToWidth(16, Qt.SmoothTransformation))  # Adjust size as needed
+        self.warning_icon_label.setPixmap(
+            warning_pixmap.scaledToWidth(16, Qt.SmoothTransformation))  # Adjust size as needed
         self.warning_icon_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         title_layout.addWidget(self.warning_icon_label)
 
@@ -2141,6 +2160,8 @@ class ToastNotification(QWidget):
         if self in ToastNotification.active_toasts:
             ToastNotification.active_toasts.remove(self)
         event.accept()
+
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -2259,7 +2280,6 @@ class MainWindow(QWidget):
         if self.stacked_layout.currentIndex() == 1:
             self.alertas_window.carregar_alertas()
         toast.showNotification()
-
 
     def show_dispositivos(self):
         self.stacked_layout.setCurrentIndex(0)
@@ -2403,14 +2423,18 @@ class MainWindow(QWidget):
         elif self.file_name is not None and self.devices_hash == self.hash_dict(self.dispositivos_window.to_dict()):
             for widget in all_dispositivos_widget[:]:
                 widget.remove_button_action()
-            super().close()
             event.accept()
+        for widget in all_dispositivos_widget[:]:
+            widget.remove_button_action()
         self.dispositivos_window.queue.put(-1)
+
+
     @staticmethod
     def hash_dict(d):
         dict_str = json.dumps(d, sort_keys=True)
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
