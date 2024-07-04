@@ -92,20 +92,36 @@ class MosaicoLayout(QWidget):
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.verticalScrollBar().setStyleSheet("""
-                            QScrollBar:vertical {
-                                width: 15px;
-                            }
-                            QScrollBar::handle:vertical {
-                                background-color: #5B5B5B;
-                                border-radius: 7px;
-                            }
-                            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                                background: #292929; /* Background color of the track */
-                            }
-                            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                                height: 0px;
-                            }
-                        """)
+            QScrollBar:vertical {
+                width: 15px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #5B5B5B;
+                border-radius: 7px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: #292929; /* Background color of the track */
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
+        """)
+
+        self.scroll_area.horizontalScrollBar().setStyleSheet("""
+            QScrollBar:horizontal {
+                height: 15px;
+            }
+            QScrollBar::handle:horizontal {
+                background-color: #5B5B5B;
+                border-radius: 7px;
+            }
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+                background: #292929; /* Background color of the track */
+            }
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                width: 0px;
+            }
+        """)
 
         self.scroll_content = QWidget(self.scroll_area)
         self.scroll_content.setLayout(self.layout)
@@ -115,7 +131,7 @@ class MosaicoLayout(QWidget):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.addWidget(self.scroll_area)
         self.setLayout(self.main_layout)
-        self.setStyleSheet("background-color: #292929;border:0px;")
+        self.setStyleSheet("background-color: transparent")
         self.num_devices = 0
         self.widgets = []
 
@@ -646,7 +662,7 @@ class DispositivoWidget(QWidget):
         }
 
     @staticmethod
-    def from_dict(data):
+    def from_dict(self, data):
         return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"], self.dispositivos_window)
 
 

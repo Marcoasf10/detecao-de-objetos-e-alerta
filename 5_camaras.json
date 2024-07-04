@@ -1,1 +1,36 @@
-{"devices": [{"name": "1", "device": "http://166.247.77.253:81/mjpg/video.mjpg", "objs": [], "alerts": {}}, {"name": "2", "device": "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430", "objs": [], "alerts": {}}, {"name": "3", "device": "http://37.156.71.253/cgi-bin/faststream.jpg?stream=half&fps=15&rand=COUNTER", "objs": [], "alerts": {}}, {"name": "4", "device": "http://185.97.122.128/cgi-bin/faststream.jpg?stream=half&fps=30&rand=COUNTER", "objs": [], "alerts": {}}, {"name": "5", "device": "http://216.137.193.126:8080/cam_1.jpg", "objs": [], "alerts": {}}]}
+{
+    "devices": [
+        {
+            "name": "1",
+            "device": "http://166.247.77.253:81/mjpg/video.mjpg",
+            "objs": [],
+            "alerts": {}
+        },
+        {
+            "name": "2",
+            "device": "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430",
+            "objs": [],
+            "alerts": {}
+        },
+        {
+            "name": "3",
+            "device": "http://37.156.71.253/cgi-bin/faststream.jpg?stream=half&fps=15&rand=COUNTER",
+            "objs": [],
+            "alerts": {}
+        },
+        {
+            "name": "4",
+            "device": "http://185.97.122.128/cgi-bin/faststream.jpg?stream=half&fps=30&rand=COUNTER",
+            "objs": [],
+            "alerts": {}
+        },
+        {
+            "name": "5",
+            "device": "http://216.137.193.126:8080/cam_1.jpg",
+            "objs": [],
+            "alerts": {}
+        }
+    ],
+    "emails": [],
+    "phone_numbers": []
+}
