@@ -26,6 +26,14 @@ all_dispositivos_widget = []
 global_devices = []
 
 
+def absolutePath(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+
+dropdown_icon_path = absolutePath('icons/dropdown.png')
+
+
 class CustomScrollArea(QScrollArea):
     def __init__(self):
         super().__init__()
@@ -201,7 +209,7 @@ class SplashScreen(QWidget):
 
         # QLabel for the image
         self.image_label = QLabel(self.frame)
-        pixmap = QPixmap('icons/iconBranco.png')
+        pixmap = QPixmap(absolutePath('icons/iconBranco.png'))
         self.image_label.setPixmap(pixmap)
         self.image_label.setFixedSize(100, 100)  # Set the size of the image
         self.image_label.setScaledContents(True)  # Scale image to fit the QLabel
@@ -365,7 +373,7 @@ class DispositivoWidget(QWidget):
         self.dispositivos_window = dispositovo_window
         self.pause = False
         self.name = name
-        self.image_path = "frames/noCamera.jpg"  # Store the image path
+        self.image_path = absolutePath("frames/noCamera.jpg")
         self.objToFind = objToFind
         layout = QVBoxLayout(self)
         self.device = device
@@ -374,26 +382,26 @@ class DispositivoWidget(QWidget):
 
         # Setting button
         self.settings_button = WidgetButton()
-        self.settings_button.setIcon(QIcon("icons/settings.png"))
+        self.settings_button.setIcon(QIcon(absolutePath("icons/settings.png")))
         self.settings_button.setIconSize(QSize(40, 40))
         self.settings_button.setFixedSize(50, 50)
         self.settings_button.clicked.connect(self.setting_button_clicked)
 
         self.expand_button = WidgetButton()
-        self.expand_button.setIcon(QIcon("icons/expand.png"))
+        self.expand_button.setIcon(QIcon(absolutePath("icons/expand.png")))
         self.expand_button.setIconSize(QSize(35, 35))
         self.expand_button.setFixedSize(50, 50)
         self.expand_button.clicked.connect(self.expand_button_clicked)
 
         self.remove_button = WidgetButton()
-        self.remove_button.setIcon(QIcon("icons/remove.png"))
+        self.remove_button.setIcon(QIcon(absolutePath("icons/remove.png")))
         self.remove_button.setIconSize(QSize(35, 35))
         self.remove_button.setFixedSize(50, 50)
         self.remove_button.clicked.connect(self.remove_button_clicked)
 
         layout_imagem = QHBoxLayout()
 
-        self.iconPause = QIcon("icons/pause_circle.png")
+        self.iconPause = QIcon(absolutePath("icons/pause_circle.png"))
 
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
@@ -414,62 +422,63 @@ class DispositivoWidget(QWidget):
 
         button_layout = QHBoxLayout()
         self.start_button = WidgetPressedButton()
-        self.start_button.setIcon(QIcon("icons/play.png"))
+        self.start_button.setIcon(QIcon(absolutePath("icons/play.png")))
         self.start_button.setIconSize(QSize(30, 30))
         self.start_button.setFixedSize(50, 50)
         self.start_button.clicked.connect(self.start_button_clicked)
         self.stop_button = WidgetButton()
-        self.stop_button.setIcon(QIcon("icons/pause.png"))
+        self.stop_button.setIcon(QIcon(absolutePath("icons/pause.png")))
         self.stop_button.setIconSize(QSize(35, 35))
         self.stop_button.setFixedSize(50, 50)
         self.stop_button.clicked.connect(self.stop_button_clicked)
         self.live_button = WidgetButton()
-        self.live_button.setIcon(QIcon("icons/live.png"))
+        self.live_button.setIcon(QIcon(absolutePath("icons/live.png")))
         self.live_button.clicked.connect(self.live_button_clicked)
         self.live_button.setIconSize(QSize(35, 35))
         self.live_button.setFixedSize(50, 50)
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
         self.combo_delay = QComboBox()
-        combo_style = """
-            QComboBox {
+        global dropdown_icon_path
+        combo_style = f"""
+            QComboBox {{
                 font-size: 15px;
                 background-color: #D9D9D9;
                 color: #000000;
                 border: none;
                 border-radius: 10px;
                 padding: 10px;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: 0px;
                 background-color: #D9D9D9;
                 margin-right: 20px;
-            }
-            QComboBox::down-arrow {
-                image: url(icons/dropdown.png);
+            }}
+            QComboBox::down-arrow {{
+                image: url({dropdown_icon_path});
                 width: 20px;
                 height: 20px;
-            }
-            QComboBox::item {
+            }}
+            QComboBox::item {{
                 background-color: #5B5B5B;
                 color: #FFFFFF;
-            }
-            QComboBox::item:!selected {
+            }}
+            QComboBox::item:!selected {{
                 background-color: #D9D9D9;
                 color: #000000;
-            }
-            QMessageBox {
+            }}
+            QMessageBox {{
                  background-color: #5B5B5B;
                  color: #000000;
-            }
-            QMessageBox QPushButton {
+            }}
+            QMessageBox QPushButton {{
                 border: none;
                 border-radius: 10px;
                 font-size: 16px;
                 padding: 10px;
                 color: #FFFFFF;
                 background-color: #292929;
-            }
+            }}
         """
         self.combo_delay.setStyleSheet(combo_style)
         self.populate_combo_delay()
@@ -705,12 +714,12 @@ class DispositivosWindow(QWidget):
         self.add_button.clicked.connect(self.open_device_ip_window)
 
         self.mosaicoButton = LightButton()
-        self.mosaicoButton.setIcon(QIcon("icons/mosaico_2.png"))
+        self.mosaicoButton.setIcon(QIcon(absolutePath("icons/mosaico_2.png")))
         self.mosaicoButton.clicked.connect(self.layout_mosaico)
         self.threads = []
 
         self.horizontalbutton = LightButton()
-        self.horizontalbutton.setIcon(QIcon("icons/mosaico.png"))
+        self.horizontalbutton.setIcon(QIcon(absolutePath("icons/mosaico.png")))
         self.horizontalbutton.clicked.connect(self.layout_horizontal)
         self.mosaicoButton.setIconSize(QSize(35, 35))
         self.mosaicoButton.setFixedSize(50, 50)
@@ -863,7 +872,7 @@ class DispositivosWindow(QWidget):
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/iconBranco.png'))
+        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
         self.setWindowTitle("Detalhes do Alerta")
         # Set the window size and position to be centered
         self.setGeometry(100, 100, 800, 600)
@@ -958,7 +967,7 @@ class AlertaWidget(QWidget):
 
         # Botão para eliminar o widget
         self.remove_button = QPushButton()
-        self.remove_button.setIcon(QIcon("icons/close_white.png"))
+        self.remove_button.setIcon(QIcon(absolutePath("icons/close_white.png")))
         self.remove_button.setIconSize(QSize(15, 15))
         self.remove_button.setFixedSize(25, 25)
         self.remove_button.clicked.connect(self.remove_button_clicked)
@@ -1086,7 +1095,7 @@ class AlertasWindow(QWidget):
         self.device_filter.setPlaceholderText("Filter by device")
 
         self.clear_device_filter = QPushButton()
-        self.clear_device_filter.setIcon(QIcon("icons/close_red.png"))
+        self.clear_device_filter.setIcon(QIcon(absolutePath("icons/close_red.png")))
         self.clear_device_filter.setIconSize(QSize(15, 15))
         self.clear_device_filter.setFixedSize(25, 25)
         self.clear_device_filter.clicked.connect(self.clear_filter_device)
@@ -1101,7 +1110,7 @@ class AlertasWindow(QWidget):
         self.object_filter.setPlaceholderText("Filter by object")
 
         self.clear_obj_filter = QPushButton()
-        self.clear_obj_filter.setIcon(QIcon("icons/close_red.png"))
+        self.clear_obj_filter.setIcon(QIcon(absolutePath("icons/close_red.png")))
         self.clear_obj_filter.setIconSize(QSize(15, 15))
         self.clear_obj_filter.setFixedSize(25, 25)
         self.clear_obj_filter.clicked.connect(self.clear_filter_obj)
@@ -1186,20 +1195,22 @@ class AlertasWindow(QWidget):
             ultimo_alerta = self.alertas[-1]
             data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
             self.date_from.setDate(QDate(data.year, data.month, data.day))
+        global dropdown_icon_path
+        calendar_icon_path = absolutePath('icons/calendario.png')
         self.setLayout(self.layout)
-        self.setStyleSheet("""
-            QPushButton#clear_filter_btn {
+        self.setStyleSheet(f"""
+            QPushButton#clear_filter_btn {{
                 margin-left: 20px;
-            }
-            QLabel {
+            }}
+            QLabel {{
                 font-size: 15px;
                 color: #FFFFFF;
                 margin: 0px;  /* Reduce margin */
-            }
-            QPushButton {
+            }}
+            QPushButton {{
                 margin-right: 10px;  /* Adjust margin */
-            }
-            QComboBox {
+            }}
+            QComboBox {{
                 font-size: 15px;
                 background-color: #D9D9D9;
                 color: #000000;
@@ -1209,9 +1220,9 @@ class AlertasWindow(QWidget):
                 width: 150px;
                 padding: 2px 5px;
                 margin: 0px;  /* Reduce margin */
-            }
+            }}
                 
-            QDateEdit {
+            QDateEdit {{
                 font-size: 15px;
                 background-color: #D9D9D9;
                 color: #000000;
@@ -1221,46 +1232,45 @@ class AlertasWindow(QWidget):
                 width: 150px;
                 padding: 2px 5px;
                 margin: 0px;  /* Reduce margin */
-            }
+            }}
             
-            QComboBox::drop-down {
+            QComboBox::drop-down {{
                 border: none;
                 background-color: #D9D9D9;
                 margin-right: 5px;  /* Adjust margin */
                 height: 30px;
-            }
+            }}
             
-            QDateEdit::drop-down {
-                border: none;
-                image: url(icons/calendario.png);
-                margin-right: 5px;  /* Adjust margin */
-                margin-top: 5px;
-                height: 20px;
-                width: 20px;
-            }
-            
-            QComboBox::down-arrow {
-                image: url(icons/dropdown.png);
-                width: 15px;
-                height: 15px;
-            }
-            
-            
-            QComboBox QAbstractItemView {
+            QComboBox QAbstractItemView {{
                 background-color: #D9D9D9; /* Background color of the items */
                 border-radius: 10px;
                 color: #000000; /* Text color of the items */
                 padding-top: 5px;
-            }
-            QComboBox::item:!selected {
+            }}
+            QComboBox::item:!selected {{
                 background-color: #D9D9D9;
                 color: #000000;
-            }
-            QHBoxLayout {
+            }}
+            QHBoxLayout {{
                 spacing: 0px; /* Eliminate spacing between widgets in the layout */
                 margin: 0px; /* Eliminate margin */
-            }
+            }}
+            QComboBox::down-arrow {{
+            image: url({dropdown_icon_path});
+            width: 15px;
+            height: 15px;
+            }}
+    
+            QDateEdit::drop-down {{
+                border: none;
+                image: url({calendar_icon_path});
+                margin-right: 5px;
+                margin-top: 5px;
+                height: 20px;
+                width: 20px;
+            }}
         """)
+
     def add_filter_row(self, label_text, combobox):
         row_layout = QHBoxLayout()
         label = QLabel(label_text)
@@ -1389,7 +1399,7 @@ class AlertasWindow(QWidget):
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None, device=""):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/iconBranco.png'))
+        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
         self.dispositivo_widget = parent
         self.setWindowTitle(f'Imagem do Dispositivo {device}')
         self.setGeometry(0, 0, 800, 600)
@@ -1446,39 +1456,39 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
-
-        self.setStyleSheet("""
-            QLabel {
+        global dropdown_icon_path
+        self.setStyleSheet(f"""
+            QLabel {{
                 font-size: 14px;
                 color: #000000;
-            }
-            QComboBox {
+            }}
+            QComboBox {{
                 font-size: 14px;
                 background-color: #D9D9D9;
                 color: #000000;
                 border: none;
                 border-radius: 10px;
                 max-height: 20px;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox::drop-down {{
                 border: 0px;
                 background-color: #D9D9D9;
                 margin-right: 10px;
                 min-height: 10px;
-            }
-            QComboBox::down-arrow {
-                image: url(icons/dropdown.png);
+            }}
+            QComboBox::down-arrow {{
+                image: url({dropdown_icon_path});
                 width: 11px;
                 height: 11px;
-            }
-            QComboBox::item {
+            }}
+            QComboBox::item {{
                 background-color: #5B5B5B;
                 color: #FFFFFF;
-            }
-            QComboBox::item:!selected {
+            }}
+            QComboBox::item:!selected {{
                 background-color: #D9D9D9;
                 color: #000000;
-            }
+            }}
         """)
 
         if tempo is not None:
@@ -1545,12 +1555,13 @@ class ConfigurarDispositivo(QDialog):
         if objToFind is None:
             objToFind = []
         super().__init__()
-        self.setWindowIcon(QIcon('icons/iconBranco.png'))
-        self.setStyleSheet("""
-                       ConfigurarDispositivo {
+        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+        global dropdown_icon_path
+        self.setStyleSheet(f"""
+                       ConfigurarDispositivo {{
                            background-color: #5B5B5B;
-                       }
-                       QLineEdit {
+                       }}
+                       QLineEdit {{
                            background-color: #D9D9D9;
                            border: none;
                            font-size: 16px;
@@ -1558,60 +1569,60 @@ class ConfigurarDispositivo(QDialog):
                            color: #000000;
                            margin: 0px;
                            border-radius: 10px;
-                       }
-                       QLabel {
+                       }}
+                       QLabel {{
                             font-size: 16px;
                             color: #FFFFFF;
-                       }
-                       QComboBox {
+                       }}
+                       QComboBox {{
                             font-size: 15px;
                             background-color: #D9D9D9;
                             color: #000000;
                             border: none;
                             border-radius: 10px;
                             padding: 5px;
-                        }
-                        QComboBox::drop-down {
+                        }}
+                        QComboBox::drop-down {{
                             border: 0px;
                             background-color: #D9D9D9;
                             margin-right: 20px;
-                        }
-                        QComboBox::down-arrow {
-                            image: url(icons/dropdown.png);
+                        }}
+                        QComboBox::down-arrow {{
+                            image: url({dropdown_icon_path});
                             width: 20px;
                             height: 20px;
-                        }
-                        QComboBox::item {
+                        }}
+                        QComboBox::item {{
                             background-color: #5B5B5B;
                             color: #FFFFFF;
-                        }
-                        QComboBox::item:!selected {
+                        }}
+                        QComboBox::item:!selected {{
                             background-color: #D9D9D9;
                             color: #000000;
-                        }
-                        QListWidget {
+                        }}
+                        QListWidget {{
                             font-size: 14px;
                             border-radius: 10px;
-                        }
-                        QListWidget::item {
+                        }}
+                        QListWidget::item {{
                             height: 20px;
-                        }
-                        QListView::item:selected{
+                        }}
+                        QListView::item:selected{{
                             background-color: #D9D9D9;
                             color: #000000;
-                        }
-                        QMessageBox {
+                        }}
+                        QMessageBox {{
                              background-color: #5B5B5B;
                              color: #000000;
-                        }
-                        QMessageBox QPushButton {
+                        }}
+                        QMessageBox QPushButton {{
                             border: none;
                             border-radius: 10px;
                             font-size: 16px;
                             padding: 10px;
                             color: #FFFFFF;
                             background-color: #292929;
-                        }
+                        }}
                    """)
 
         self.class_names = list(set(yoloScript.get_classes()).difference(objToFind))
@@ -1666,7 +1677,7 @@ class ConfigurarDispositivo(QDialog):
         self.layout_availave = QVBoxLayout()
 
         self.button_next = LightButton("")
-        self.button_next.setIcon(QIcon("icons/arrow_right.png"))
+        self.button_next.setIcon(QIcon(absolutePath("icons/arrow_right.png")))
         self.button_next.setIconSize(QSize(50, 50))
         self.button_next.setFixedSize(50, 50)
         self.button_next.clicked.connect(self.next_page)
@@ -1750,7 +1761,7 @@ class ConfigurarDispositivo(QDialog):
         vertical_left_layout = QVBoxLayout()
         self.vertical_right_layout = QVBoxLayout()
         self.button_prev = LightButton("")
-        self.button_prev.setIcon(QIcon("icons/arrow_left.png"))
+        self.button_prev.setIcon(QIcon(absolutePath("icons/arrow_left.png")))
         self.button_prev.setIconSize(QSize(50, 50))
         self.button_prev.setFixedSize(50, 50)
         self.button_prev.clicked.connect(self.previous_page)
@@ -2004,33 +2015,34 @@ class PhoneDialog(QDialog):
         hbox.addWidget(self.phone_input_label)
 
         self.country_code_selector = QComboBox(self)
-        combo_style = """
-                    QComboBox {
+        global dropdown_icon_path
+        combo_style = f"""
+                    QComboBox {{
                         font-size: 16px;
                         background-color: #D9D9D9;
                         color: #000000;
                         border: none;
                         border-radius: 5px;
                         padding: 2px;
-                    }
-                    QComboBox::drop-down {
+                    }}
+                    QComboBox::drop-down {{
                         border: 0px;
                         background-color: #D9D9D9;
                         margin-right: 20px;
-                    }
-                    QComboBox::down-arrow {
-                        image: url(icons/dropdown.png);
+                    }}
+                    QComboBox::down-arrow {{
+                        image: url({dropdown_icon_path});
                         width: 10px;
                         height: 10px;
-                    }
-                    QComboBox::item {
+                    }}
+                    QComboBox::item {{
                         background-color: #5B5B5B;
                         color: #FFFFFF;
-                    }
-                    QComboBox::item:!selected {
+                    }}
+                    QComboBox::item:!selected {{
                         background-color: #D9D9D9;
                         color: #000000;
-                    }   
+                    }}
                 """
         self.country_code_selector.setStyleSheet(combo_style)
 
@@ -2133,7 +2145,7 @@ class ToastNotification(QWidget):
         title_layout.addWidget(self.title_label)
 
         # Warning icon label
-        warning_pixmap = QPixmap('icons/warning.png')  # Replace with your warning icon path
+        warning_pixmap = QPixmap(absolutePath('icons/warning.png'))
         self.warning_icon_label = QLabel()
         self.warning_icon_label.setPixmap(
             warning_pixmap.scaledToWidth(16, Qt.SmoothTransformation))  # Adjust size as needed
@@ -2198,7 +2210,7 @@ class ToastNotification(QWidget):
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowIcon(QIcon('icons/iconBranco.png'))
+        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
         self.setWindowTitle("SafeSight")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
@@ -2507,6 +2519,6 @@ if __name__ == '__main__':
                }
            ''')
     window.show()
-    app.setWindowIcon(QIcon('icons/iconBranco.png'))
+    app.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
     app.exec_()
     print('Closing Window...')
