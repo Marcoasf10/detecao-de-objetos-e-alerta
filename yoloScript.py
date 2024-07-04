@@ -142,6 +142,9 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
                 time.sleep(0.1)
                 grabbed = cap.grab()
                 i += 1
+                with delete_devices_lock:
+                    if device in delete_devices:
+                        break
             if not grabbed:
                 cap.release()
                 cap = cv2.VideoCapture(device)
@@ -219,7 +222,8 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
                         if time.time() - tempo_last >= tempo_alerta != 0:
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[device][id][classe_obj] = time.time()
-                            alerta = criar_alerta(device, classe_obj, frame, tempo_alerta, queue)
+                            with predicted_frames_lock:
+                                alerta = criar_alerta(device, classe_obj, predicted_frames[device], tempo_alerta, queue)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:

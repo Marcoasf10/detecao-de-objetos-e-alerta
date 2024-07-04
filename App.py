@@ -1155,12 +1155,21 @@ class AlertasWindow(QWidget):
         self.button_layout.addWidget(self.clear_filter_btn, 0, Qt.AlignCenter | Qt.AlignLeft)  # Adjust alignment
         self.layout.addLayout(self.button_layout)
         """
+        self.label_sem_alertas = QLabel("Sem alertas!")
+        self.label_sem_alertas.setStyleSheet("font-size: 20px; color: white; margin-top: 50px; font-weight: bold")
+        self.label_sem_alertas.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label_sem_alertas)
+        self.label_sem_alertas.hide()
         self.alertas_widgets = []
         self.layout.addWidget(self.scroll_area)
         self.carregar_alertas()
-        ultimo_alerta = self.alertas[-1]
-        data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
-        self.date_from.setDate(QDate(data.year, data.month, data.day))
+        if len(self.alertas) == 0:
+            self.label_sem_alertas.show()
+            self.scroll_area.hide()
+        if len(self.alertas) > 0:
+            ultimo_alerta = self.alertas[-1]
+            data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
+            self.date_from.setDate(QDate(data.year, data.month, data.day))
         self.setLayout(self.layout)
         self.setStyleSheet("""
             QPushButton#clear_filter_btn {
@@ -1236,7 +1245,6 @@ class AlertasWindow(QWidget):
                 margin: 0px; /* Eliminate margin */
             }
         """)
-
     def add_filter_row(self, label_text, combobox):
         row_layout = QHBoxLayout()
         label = QLabel(label_text)
@@ -1252,12 +1260,11 @@ class AlertasWindow(QWidget):
         self.alertas = []
         devices_in_alerts = set()
         self.device_filter.clear()
-        for widget in self.alertas_widgets:
-            self.layout.removeWidget(widget)
-            widget.deleteLater()
-        self.alertas_widgets = []
         try:
-            with open("alertas.bin", 'rb') as file:
+            if not os.path.exists("./alertas.bin"):
+                with open("./alertas.bin", 'wb') as file:
+                    pass
+            with open("./alertas.bin", 'rb') as file:
                 while True:
                     alerta = pickle.load(file)
                     self.alertas.append(alerta)
@@ -1269,14 +1276,16 @@ class AlertasWindow(QWidget):
                 device = "Dispositivo: " + str(device)
             self.device_filter.addItem(str(device))
         self.alertas.reverse()
+        if len(self.alertas) > 0:
+            self.label_sem_alertas.hide()
+            self.scroll_area.show()
+            ultimo_alerta = self.alertas[-1]
+            data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
+            self.date_from.setDate(QDate(data.year, data.month, data.day))
         self.mostrar_alertas(self.alertas)
 
     def filter_alertas(self):
         alertas = self.alertas
-        # Remove todos os AlertaWidgets
-        for widget in self.alertas_widgets:
-            self.layout.removeWidget(widget)
-            widget.deleteLater()
         # Aplica os filtros
         device_filter_text = self.device_filter.currentText().lower()
         object_filter_text = self.object_filter.currentText().lower()
@@ -1310,9 +1319,10 @@ class AlertasWindow(QWidget):
         self.object_filter.setCurrentIndex(-1)
         self.order_filter.setCurrentIndex(0)
         self.date_to.setDate(QDate.currentDate())
-        ultimo_alerta = self.alertas[-1]
-        data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
-        self.date_from.setDate(QDate(data.year, data.month, data.day))
+        if len(self.alertas) != 0:
+            ultimo_alerta = self.alertas[-1]
+            data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
+            self.date_from.setDate(QDate(data.year, data.month, data.day))
         # Reload original alerts
         self.carregar_alertas()
         self.clear_device_filter.hide()
@@ -1321,6 +1331,9 @@ class AlertasWindow(QWidget):
         self.clear_obj_filter_placeholder.show()
 
     def mostrar_alertas(self, alertas):
+        for widget in self.alertas_widgets:
+            self.layout.removeWidget(widget)
+            widget.deleteLater()
         self.alertas_widgets = []
         for alerta in alertas:
             alerta_widget = AlertaWidget(alerta, self)
@@ -1328,7 +1341,11 @@ class AlertasWindow(QWidget):
             self.scroll_layout.addWidget(alerta_widget)
 
     def remove_alerta_widget(self, alerta_widget):
-        self.alertas_widgets.remove(alerta_widget)
+        if alerta_widget in self.alertas_widgets:
+            self.alertas_widgets.remove(alerta_widget)
+        if len(self.alertas_widgets) == 0:
+            self.label_sem_alertas.show()
+            self.scroll_area.hide()
 
     def clear_filter_device(self):
         self.device_filter.setCurrentIndex(-1)
@@ -2427,7 +2444,6 @@ class MainWindow(QWidget):
         for widget in all_dispositivos_widget[:]:
             widget.remove_button_action()
         self.dispositivos_window.queue.put(-1)
-
 
     @staticmethod
     def hash_dict(d):
