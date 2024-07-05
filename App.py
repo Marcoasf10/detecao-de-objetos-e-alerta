@@ -1436,6 +1436,8 @@ class AlertasWindow(QWidget):
     def remove_alerta_widget(self, alerta_widget):
         if alerta_widget in self.alertas_widgets:
             self.alertas_widgets.remove(alerta_widget)
+        if alerta_widget.alerta in self.alertas:
+            self.alertas.remove(alerta_widget.alerta)
         if len(self.alertas_widgets) == 0:
             self.label_sem_alertas.show()
             self.scroll_area.hide()
@@ -2527,6 +2529,7 @@ class MainWindow(QWidget):
                     event.accept()
             elif reply == QMessageBox.Cancel:
                 event.ignore()
+                return
             elif reply == QMessageBox.No:
                 for widget in all_dispositivos_widget[:]:
                     widget.remove_button_action()
