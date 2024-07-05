@@ -100,7 +100,8 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
     last_frame = None
     error = 0
     stop = False
-    alerta_filename = 'alertas.bin'
+    alerta_filename = App.absolutePath('alertas.bin')
+
     if 'http' in str(device) or 'rtsp' in str(device):
         device_folder = device.split('/')[2].replace('.', '_').replace(':', '_')
     else:

@@ -30,10 +30,6 @@ def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
-
-dropdown_icon_path = absolutePath('icons/dropdown.png')
-
-
 class CustomScrollArea(QScrollArea):
     def __init__(self):
         super().__init__()
@@ -439,7 +435,7 @@ class DispositivoWidget(QWidget):
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
         self.combo_delay = QComboBox()
-        global dropdown_icon_path
+        dropdown_icon_path = absolutePath('icons/dropdown.png')
         combo_style = f"""
             QComboBox {{
                 font-size: 15px;
@@ -1094,14 +1090,15 @@ class AlertaWidget(QWidget):
     def remove_button_clicked(self):
         try:
             alertas = []
-            with open('alertas.bin', 'rb') as f:
+            alertas_path = absolutePath("alertas.bin")
+            with open(alertas_path, 'rb') as f:
                 while True:
                     try:
                         alertas.append(pickle.load(f))
                     except EOFError:
                         break
             alertas = [a for a in alertas if a.get_id() != self.alerta.get_id()]
-            with open('alertas.bin', 'wb') as f:
+            with open(alertas_path, 'wb') as f:
                 for alerta in alertas:
                     pickle.dump(alerta, f)
         except Exception as e:
@@ -1256,7 +1253,7 @@ class AlertasWindow(QWidget):
             yoloScript.ultimo_id_alerta(self.alertas[0].get_id())
             data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
             self.date_from.setDate(QDate(data.year, data.month, data.day))
-        global dropdown_icon_path
+        dropdown_icon_path = absolutePath('icons/dropdown.png')
         calendar_icon_path = absolutePath('icons/calendario.png')
         self.setLayout(self.layout)
         self.setStyleSheet(f"""
@@ -1345,13 +1342,14 @@ class AlertasWindow(QWidget):
 
     def carregar_alertas(self):
         self.alertas = []
+        alertas_path = absolutePath("./alertas.bin")
         devices_in_alerts = set()
         self.device_filter.clear()
         try:
-            if not os.path.exists("./alertas.bin"):
-                with open("./alertas.bin", 'wb') as file:
+            if not os.path.exists(alertas_path):
+                with open(alertas_path, 'wb') as file:
                     pass
-            with open("./alertas.bin", 'rb') as file:
+            with open(alertas_path, 'rb') as file:
                 while True:
                     alerta = pickle.load(file)
                     self.alertas.append(alerta)
@@ -1525,7 +1523,7 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
-        global dropdown_icon_path
+        dropdown_icon_path = absolutePath('icons/dropdown.png')
         self.setStyleSheet(f"""
             QLabel {{
                 font-size: 14px;
@@ -1625,7 +1623,7 @@ class ConfigurarDispositivo(QDialog):
             objToFind = []
         super().__init__()
         self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
-        global dropdown_icon_path
+        dropdown_icon_path = absolutePath('icons/dropdown.png')
         self.setStyleSheet(f"""
                        ConfigurarDispositivo {{
                            background-color: #5B5B5B;
@@ -2084,7 +2082,7 @@ class PhoneDialog(QDialog):
         hbox.addWidget(self.phone_input_label)
 
         self.country_code_selector = QComboBox(self)
-        global dropdown_icon_path
+        dropdown_icon_path = absolutePath('icons/dropdown.png')
         combo_style = f"""
                     QComboBox {{
                         font-size: 16px;

@@ -9,8 +9,12 @@
         {
             "name": "2",
             "device": "http://85.193.230.144:81/webcapture.jpg?command=snap&channel=1?1718299430",
-            "objs": [],
-            "alerts": {}
+            "objs": [
+                "car"
+            ],
+            "alerts": {
+                "car": 4
+            }
         },
         {
             "name": "3",
