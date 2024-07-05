@@ -1322,7 +1322,13 @@ class AlertasWindow(QWidget):
         else:
             alertas.sort(key=lambda x: x.get_date(), reverse=True)
         if device_filter_text:
-            alertas = [alerta for alerta in alertas if str(alerta.get_device()) in device_filter_text]
+            alertas = [
+                alerta for alerta in alertas
+                if (
+                       str("Dispositivo: " + str(alerta.get_device())).lower() if isinstance(alerta.get_device(), (int, float))
+                       else str(alerta.get_device()).lower()
+                   ) == device_filter_text.lower()
+            ]
 
         if object_filter_text:
             alertas = [alerta for alerta in alertas if object_filter_text in alerta.get_descricao()]
