@@ -970,7 +970,7 @@ class AlertaWidget(QWidget):
         self.remove_button.setIcon(QIcon(absolutePath("icons/close_white.png")))
         self.remove_button.setIconSize(QSize(15, 15))
         self.remove_button.setFixedSize(25, 25)
-        self.remove_button.clicked.connect(self.remove_button_clicked)
+        self.remove_button.clicked.connect(self.remove_button_clicked_msg_box)
         top_layout.addWidget(self.remove_button, 0, 0, Qt.AlignTop | Qt.AlignRight)
         # Layout horizontal para o restante do conteúdo
         self.item_layout = QHBoxLayout()
@@ -999,14 +999,26 @@ class AlertaWidget(QWidget):
         self.detalhes_window = None
 
         # Set initial background color
-        self.setStyleSheet("background-color: #292929;")
+        self.setStyleSheet("""
+                    AlertaWidget {
+                        background-color: #292929;
+                    }
+                """)
 
     def enterEvent(self, event):
-        self.setStyleSheet("background-color: #1f1f1f;")
+        self.setStyleSheet("""
+            AlertaWidget {
+                background-color: #1f1f1f;
+            }
+        """)
         self.setCursor(Qt.PointingHandCursor)
 
     def leaveEvent(self, event):
-        self.setStyleSheet("background-color: #292929;")
+        self.setStyleSheet("""
+            AlertaWidget {
+                background-color: #292929;
+            }
+        """)
         self.setCursor(Qt.ArrowCursor)
 
     def mousePressEvent(self, event):
@@ -1030,6 +1042,54 @@ class AlertaWidget(QWidget):
 
         self.detalhes_window = AlertaDetalhes(imagem, alerta_tempo, device, classe, data)
         self.detalhes_window.show()
+
+    def remove_button_clicked_msg_box(self):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setWindowTitle('Confirmação')
+        msg_box.setText('Tem a certeza que deseja remover o alerta?')
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+
+        msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #4e4e4e;
+                    }
+                    QMessageBox QLabel {
+                        color: white;
+                    }
+                    QAbstractButton {
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QAbstractButton:hover {
+                        background-color: #3d3d3d;
+                    }
+                    StandardButton {
+                        background-color: #4e4e4e;
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    StandardButton:hover {
+                        background-color: #3d3d3d;
+                    }
+                    QPushButton {
+                        background-color: #4e4e4e;
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #3d3d3d;
+                    }
+
+                """)
+
+        reply = msg_box.exec()
+        if reply == QMessageBox.Yes:
+            self.remove_button_clicked()
 
     def remove_button_clicked(self):
         try:
