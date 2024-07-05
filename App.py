@@ -5,6 +5,7 @@ import math
 import os
 import sys
 import time
+import platform
 from multiprocessing import Queue
 from threading import Thread
 import phonenumbers
@@ -25,10 +26,16 @@ import pickle
 all_dispositivos_widget = []
 global_devices = []
 
-
 def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
+
+if platform.system() == "Windows":
+    dropdown_icon_path = './icons/dropdown.png'
+    calendar_icon_path = './icons/calendario.png'
+else:
+    dropdown_icon_path = absolutePath('icons/dropdown.png')
+    calendar_icon_path = absolutePath('icons/calendario.png')
 
 class CustomScrollArea(QScrollArea):
     def __init__(self):
@@ -435,7 +442,7 @@ class DispositivoWidget(QWidget):
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
         self.combo_delay = QComboBox()
-        dropdown_icon_path = absolutePath('icons/dropdown.png')
+        global dropdown_icon_path
         combo_style = f"""
             QComboBox {{
                 font-size: 15px;
@@ -1253,8 +1260,8 @@ class AlertasWindow(QWidget):
             yoloScript.ultimo_id_alerta(self.alertas[0].get_id())
             data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
             self.date_from.setDate(QDate(data.year, data.month, data.day))
-        dropdown_icon_path = absolutePath('icons/dropdown.png')
-        calendar_icon_path = absolutePath('icons/calendario.png')
+        global dropdown_icon_path
+        global calendar_icon_path
         self.setLayout(self.layout)
         self.setStyleSheet(f"""
             QPushButton#clear_filter_btn {{
@@ -1523,7 +1530,7 @@ class CustomWidget(QWidget):
         layout.addWidget(self.combo_box_time)
         self.setLayout(layout)
         self.combo_box_time.currentIndexChanged.connect(self.update_time_unit)
-        dropdown_icon_path = absolutePath('icons/dropdown.png')
+        global dropdown_icon_path
         self.setStyleSheet(f"""
             QLabel {{
                 font-size: 14px;
@@ -1623,7 +1630,7 @@ class ConfigurarDispositivo(QDialog):
             objToFind = []
         super().__init__()
         self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
-        dropdown_icon_path = absolutePath('icons/dropdown.png')
+        global dropdown_icon_path
         self.setStyleSheet(f"""
                        ConfigurarDispositivo {{
                            background-color: #5B5B5B;
@@ -2082,7 +2089,7 @@ class PhoneDialog(QDialog):
         hbox.addWidget(self.phone_input_label)
 
         self.country_code_selector = QComboBox(self)
-        dropdown_icon_path = absolutePath('icons/dropdown.png')
+        global dropdown_icon_path
         combo_style = f"""
                     QComboBox {{
                         font-size: 16px;
