@@ -48,6 +48,7 @@ emails_alert = []
 phone_numbers_alert = []
 emails_alert_lock = Lock()
 phone_numbers_alert_lock = Lock()
+id_ultimo_alerta = 0
 
 def addDispositivoToPredict(device, classes, lista_alertas, queue, delay,graphs=False):
     global grafico_made
@@ -458,6 +459,9 @@ def graficoPerformance(cpu_usage, memory_usage):
 
 class Alerta:
     def __init__(self, device, classe, descricao, photo, date, tempo_alerta):
+        global id_ultimo_alerta
+        id_ultimo_alerta += 1
+        self.id = id_ultimo_alerta
         self.device = device
         self.classe = classe
         self.descricao = descricao
@@ -465,6 +469,8 @@ class Alerta:
         self.date = date
         self.tempo_alerta = tempo_alerta
 
+    def get_id(self):
+        return self.id
     def get_device(self):
         return self.device
 
@@ -620,3 +626,8 @@ def criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates
     output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}_{modelo}.png'
     plt.savefig(output_filename)
     plt.show()
+
+def ultimo_id_alerta(id):
+    global id_ultimo_alerta
+    id_ultimo_alerta = id
+    print(id_ultimo_alerta)

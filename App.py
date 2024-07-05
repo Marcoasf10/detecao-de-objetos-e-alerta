@@ -1040,7 +1040,7 @@ class AlertaWidget(QWidget):
                         alertas.append(pickle.load(f))
                     except EOFError:
                         break
-            alertas = [a for a in alertas if not np.array_equal(a.get_photo(), self.alerta.get_photo())]
+            alertas = [a for a in alertas if a.get_id() != self.alerta.get_id()]
             with open('alertas.bin', 'wb') as f:
                 for alerta in alertas:
                     pickle.dump(alerta, f)
@@ -1193,6 +1193,7 @@ class AlertasWindow(QWidget):
             self.scroll_area.hide()
         if len(self.alertas) > 0:
             ultimo_alerta = self.alertas[-1]
+            yoloScript.ultimo_id_alerta(self.alertas[0].get_id())
             data = datetime.datetime.fromtimestamp(ultimo_alerta.get_date())
             self.date_from.setDate(QDate(data.year, data.month, data.day))
         global dropdown_icon_path
@@ -2501,7 +2502,7 @@ if __name__ == '__main__':
                }
                QFrame {
                    background-color: #292929;
-                   color: #fffff;
+                   color: #ffffff;
                }
 
                QProgressBar {
