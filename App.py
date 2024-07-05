@@ -285,7 +285,7 @@ class SplashScreen(QWidget):
                 #frame {
                     border-radius: 15px;
                     background-color: #292929;
-                    color: #fffff;
+                    color: #ffffff;
                     padding: 40px 10px 30px 10px;
                 }
         """)
