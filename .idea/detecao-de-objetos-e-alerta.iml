@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/venv_3.12" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 (detecao-de-objetos-e-alerta)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

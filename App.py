@@ -370,7 +370,7 @@ class DarkButton(QPushButton):
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
 
-    def __init__(self, name, device, objToFind, lista_alertas, dispositovo_window):
+    def __init__(self, name, device, objToFind, lista_alertas, dispositovo_window, delay):
         super().__init__()
         self.image_window = None
         self.dispositivos_window = dispositovo_window
@@ -441,6 +441,7 @@ class DispositivoWidget(QWidget):
         self.live_button.setFixedSize(50, 50)
         self.combo_delay_label = QLabel("Delay:")
         self.combo_delay_label.setStyleSheet("font-size: 15px; color: #FFFFFF")
+        self.last_delay = delay
         self.combo_delay = QComboBox()
         global dropdown_icon_path
         combo_style = f"""
@@ -485,7 +486,7 @@ class DispositivoWidget(QWidget):
         """
         self.combo_delay.setStyleSheet(combo_style)
         self.populate_combo_delay()
-        self.combo_delay.currentIndexChanged.connect(self.start_button_clicked)
+        self.combo_delay.currentIndexChanged.connect(self.combo_delay_changed)
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
         button_layout.addWidget(self.live_button)
@@ -494,7 +495,7 @@ class DispositivoWidget(QWidget):
         layout.addLayout(button_layout)
         self.start_button_clicked()
         self.lista_alertas = lista_alertas
-
+        self.classes_to_lose_alert = []
         # Connect image clicked signal to slot
         #self.image_label.mousePressEvent = self.on_image_clicked
 
@@ -562,6 +563,73 @@ class DispositivoWidget(QWidget):
         self.stop_button.setStyleSheet(self.stop_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
         self.live_button.setStyleSheet(self.live_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
 
+    def combo_delay_changed(self):
+        delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
+        if delay == self.last_delay:
+            return
+        for classe, tempo in self.lista_alertas.items():
+            if tempo > 0:
+                if tempo < delay or tempo % delay != 0:
+                    self.classes_to_lose_alert.append(classe)
+        if len(self.classes_to_lose_alert) > 0:
+            self.show_warning()
+        else:
+            self.start_button_clicked()
+
+    def show_warning(self):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setWindowTitle('Aviso')
+        msg_box.setText(
+            'Ao alterar o tempo de captura, os objetos cujos tempos para emissão de alerta não sejam maiores e múltiplos do tempo de captura, vão deixar de emitir alertas. Deseja continuar?')
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+        msg_box.setStyleSheet("""
+                                QMessageBox {
+                                    background-color: #4e4e4e; /* Light background color */
+                                }
+                                QMessageBox QLabel {
+                                    color: white;
+                                }
+                                QAbstractButton {
+                                    background-color: #292929; /* Darker color for buttons */
+                                    color: white;
+                                    border-radius: 10px; /* Rounded borders */
+                                    padding: 5px 10px;
+                                }
+                                QAbstractButton:hover {
+                                    background-color: #3d3d3d; /* Slightly lighter on hover */
+                                }
+                                StandardButton {
+                                    background-color: #292929; /* Darker color for buttons */
+                                    color: white;
+                                    border-radius: 10px; /* Rounded borders */
+                                    padding: 5px 10px;
+                                }
+                                StandardButton:hover {
+                                    background-color: #3d3d3d;
+                                }
+                                QPushButton {
+                                    background-color: #292929;
+                                    color: white;
+                                    border-radius: 10px;
+                                    padding: 5px 10px;
+                                }
+                                QPushButton:hover {
+                                    background-color: #3d3d3d;
+                                }
+
+                            """)
+        reply = msg_box.exec()
+        if reply == QMessageBox.Yes:
+            for classe in self.classes_to_lose_alert:
+                self.lista_alertas[classe] = 0
+            self.classes_to_lose_alert.clear()
+            yoloScript.update_obj_to_find(self.device, self.objToFind, self.lista_alertas)
+            self.start_button_clicked()
+        else:
+            self.combo_delay.setCurrentIndex(self.combo_delay.findData(self.last_delay))
+
     def stop_button_clicked(self):
         yoloScript.change_stop(self.device, True)
         self.start_button.setStyleSheet(self.start_button.styleSheet() + "QPushButton{background-color: #D9D9D9}")
@@ -596,12 +664,11 @@ class DispositivoWidget(QWidget):
         self.combo_delay.addItem("30 minutos", 1800)
         self.combo_delay.addItem("1 hora", 3600)
         self.combo_delay.addItem("1h 30m", 5400)
-        self.combo_delay.setCurrentIndex(2)
+        self.combo_delay.setCurrentIndex(self.combo_delay.findData(self.last_delay))
 
     def change_delay(self):
-        delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
-        print(delay)
-        yoloScript.change_delay(self.device, delay)
+        self.last_delay = self.combo_delay.itemData(self.combo_delay.currentIndex())
+        yoloScript.change_delay(self.device, self.last_delay)
 
     def remove_button_clicked(self):
         msg_box = QMessageBox(self)
@@ -611,7 +678,6 @@ class DispositivoWidget(QWidget):
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
 
-        # Estilizando a caixa de mensagem
         msg_box.setStyleSheet("""
             QMessageBox {
                 background-color: #4e4e4e; /* Light background color */
@@ -670,7 +736,8 @@ class DispositivoWidget(QWidget):
             "name": self.name,
             "device": self.device,
             "objs": self.objToFind,
-            "alerts": self.lista_alertas
+            "alerts": self.lista_alertas,
+            "delay": self.last_delay
         }
 
     @staticmethod
@@ -801,9 +868,9 @@ class DispositivosWindow(QWidget):
         for widget in all_dispositivos_widget:
             self.horizontal_layout.addWidget(widget)
 
-    def add_dispositivo(self, name, device, objToFind, lista_alertas):
+    def add_dispositivo(self, name, device, objToFind, lista_alertas, delay=10):
         global all_dispositivos_widget
-        dispositivo_widget = DispositivoWidget(name, device, objToFind, lista_alertas, self)
+        dispositivo_widget = DispositivoWidget(name, device, objToFind, lista_alertas, self, delay)
         all_dispositivos_widget.append(dispositivo_widget)
         self.dispositivos_dict[device] = dispositivo_widget
         if self.stacked_layout.currentIndex() == 1:
@@ -863,13 +930,14 @@ class DispositivosWindow(QWidget):
         devices = []
         for widget in all_dispositivos_widget:
             devices.append(widget.to_dict())
+            print(widget.to_dict())
         return {"devices": devices}
 
     def from_dict(self, data):
         global all_dispositivos_widget
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
-            self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"])
+            self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"], device_data["delay"])
 
 
 class AlertaDetalhes(QMainWindow):
