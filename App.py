@@ -12,8 +12,8 @@ import phonenumbers
 from phonenumbers import PhoneMetadata
 import cv2
 import numpy as np
-from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread, QDate, QPoint, QPropertyAnimation
-from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette
+from PyQt5.QtCore import Qt, QTimer, QSize, QRect, pyqtSignal, QThread, QDate, QPoint, QPropertyAnimation, QRectF
+from PyQt5.QtGui import QPixmap, QImage, QIcon, QPainter, QColor, QPalette, QBrush, QPainterPath
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedLayout, \
     QListWidget, QScrollArea, QMainWindow, QDialog, QLineEdit, QComboBox, QCheckBox, QFrame, QProgressBar, \
     QSizePolicy, QScrollBar, QAbstractItemView, QStackedWidget, QGridLayout, QMessageBox, QListWidgetItem, \
@@ -409,7 +409,8 @@ class DispositivoWidget(QWidget):
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
         pixmap = pixmap.scaledToWidth(325)
-        self.image_label.setPixmap(pixmap)
+        self.roundedPixmap = self.roundPixmap(pixmap)
+        self.image_label.setPixmap(self.roundedPixmap)
         settings_layout = QVBoxLayout()
         settings_layout.addWidget(self.settings_button, alignment=Qt.AlignTop)
         settings_layout.addWidget(self.expand_button, alignment=Qt.AlignTop)
@@ -496,8 +497,27 @@ class DispositivoWidget(QWidget):
         self.start_button_clicked()
         self.lista_alertas = lista_alertas
         self.classes_to_lose_alert = []
-        # Connect image clicked signal to slot
-        #self.image_label.mousePressEvent = self.on_image_clicked
+
+    def roundPixmap(self, pixmap, radius_percent=4):
+        width = pixmap.width()
+        height = pixmap.height()
+        size = min(width, height)
+        radius = (radius_percent / 100) * size
+
+        rounded_pixmap = QPixmap(width, height)
+        rounded_pixmap.fill(Qt.transparent)
+
+        painter = QPainter(rounded_pixmap)
+        painter.setRenderHint(QPainter.Antialiasing, True)
+
+        path = QPainterPath()
+        path.addRoundedRect(0, 0, width, height, radius, radius)
+        painter.setClipPath(path)
+
+        painter.drawPixmap(0, 0, pixmap)
+        painter.end()
+
+        return rounded_pixmap
 
     def sobrepor_icon_centralizado(self, frame, icon):
         frame_height = frame.height()
@@ -550,6 +570,7 @@ class DispositivoWidget(QWidget):
         img_array_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         q_img = QImage(img_array_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(q_img)
+        pixmap = self.roundPixmap(pixmap)
         pixmap = pixmap.scaled(self.image_label.size(), aspectRatioMode=Qt.KeepAspectRatio)
         self.image_label.setPixmap(pixmap)
         if self.image_window is not None:
@@ -2275,7 +2296,7 @@ class ToastNotification(QWidget):
 
         # Main container widget with background color
         container = QWidget()
-        container.setStyleSheet("background-color: #B8860B; border-radius: 10px;")
+        container.setStyleSheet("background-color: #F7CA00; border-radius: 10px;")
         container_layout = QVBoxLayout(container)
 
         # Horizontal layout for title and icon
@@ -2283,7 +2304,7 @@ class ToastNotification(QWidget):
 
         # Title label
         self.title_label = QLabel(self.title)
-        self.title_label.setStyleSheet("color: black; font-weight: bold; padding-bottom: 5px;")
+        self.title_label.setStyleSheet("color: #292929; font-weight: bold; padding-bottom: 5px;")
         title_layout.addWidget(self.title_label)
 
         # Warning icon label
@@ -2298,7 +2319,7 @@ class ToastNotification(QWidget):
 
         # Message label
         self.message_label = QLabel(self.message)
-        self.message_label.setStyleSheet("color: black; padding: 10px;")
+        self.message_label.setStyleSheet("color: #292929; padding: 10px;")
         container_layout.addWidget(self.message_label)
 
         layout.addWidget(container)
@@ -2486,7 +2507,7 @@ class MainWindow(QWidget):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
         for widget in all_dispositivos_widget:
-            widget.remove_button_clicked()
+            widget.remove_button_action()
         if file_name:
             with open(file_name, 'r') as file:
                 data = json.load(file)
