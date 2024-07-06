@@ -1,1 +1,34 @@
-{"devices": [{"name": "A", "device": 0, "objs": [], "alerts": {}}, {"name": "B", "device": 1, "objs": [], "alerts": {}}, {"name": "C", "device": 2, "objs": [], "alerts": {}}, {"name": "D", "device": 3, "objs": [], "alerts": {}}], "emails": [], "phone_numbers": []}
+{
+  "devices": [
+    {
+      "name": "A",
+      "device": 0,
+      "objs": [],
+      "alerts": {},
+      "delay": 10
+    },
+    {
+      "name": "B",
+      "device": 1,
+      "objs": [],
+      "alerts": {},
+      "delay": 10
+    },
+    {
+      "name": "C",
+      "device": 2,
+      "objs": [],
+      "alerts": {},
+      "delay": 10
+    },
+    {
+      "name": "D",
+      "device": 3,
+      "objs": [],
+      "alerts": {},
+      "delay": 10
+    }
+  ],
+  "emails": [],
+  "phone_numbers": []
+}

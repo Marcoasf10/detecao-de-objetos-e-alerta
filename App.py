@@ -941,7 +941,7 @@ class DispositivosWindow(QWidget):
 
 
 class AlertaDetalhes(QMainWindow):
-    def __init__(self, frame, alerta_tempo, device, classe, timestamp):
+    def __init__(self, frame, alerta_tempo, device, classe, timestamp, id_objeto):
         super().__init__()
         self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
         self.setWindowTitle("Detalhes do Alerta")
@@ -978,6 +978,7 @@ class AlertaDetalhes(QMainWindow):
         self.descricao_label = QLabel(f"<b> Tempo parado: {string_tempo}</b>")
         self.device_label = QLabel(f"<b> Device: {device} </b>")
         self.classe_label = QLabel(f"<b> Classe: {classe} </b>")
+        self.id_objeto_label = QLabel(f"<b> ID do objeto: {id_objeto} </b>")
         time_struct = time.localtime(timestamp)
         data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
         self.data_label = QLabel(f"<b> Data: {data} </b>")
@@ -985,6 +986,7 @@ class AlertaDetalhes(QMainWindow):
         details_layout.addWidget(self.descricao_label)
         details_layout.addWidget(self.device_label)
         details_layout.addWidget(self.classe_label)
+        details_layout.addWidget(self.id_objeto_label)
         details_layout.addWidget(self.data_label)
 
         # Adicionar os detalhes abaixo da imagem
@@ -1110,8 +1112,9 @@ class AlertaWidget(QWidget):
         classe = self.alerta.get_classe()
         data = self.alerta.get_date()
         imagem = self.alerta.get_photo()
+        id_objeto = self.alerta.get_id_objeto()
 
-        self.detalhes_window = AlertaDetalhes(imagem, alerta_tempo, device, classe, data)
+        self.detalhes_window = AlertaDetalhes(imagem, alerta_tempo, device, classe, data, id_objeto)
         self.detalhes_window.show()
 
     def remove_button_clicked_msg_box(self):

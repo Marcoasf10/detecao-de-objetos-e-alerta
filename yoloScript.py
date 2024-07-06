@@ -225,7 +225,7 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[device][id][classe_obj] = time.time()
                             with predicted_frames_lock:
-                                alerta = criar_alerta(device, classe_obj, predicted_frames[device], tempo_alerta, queue)
+                                alerta = criar_alerta(device, classe_obj, predicted_frames[device], tempo_alerta, queue, id)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
@@ -330,7 +330,7 @@ def change_alert_time(device, time_dict):
     alert_time_dict[device] = time_dict
 
 
-def criar_alerta(device, classe_obj, frame, tempo_alerta, queue):
+def criar_alerta(device, classe_obj, frame, tempo_alerta, queue, id_objeto):
     time_struct = time.localtime(time.time())
     formatted_time = time.strftime('%d/%m/%Y', time_struct)
     if tempo_alerta >= 3600:
@@ -355,7 +355,7 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta, queue):
     descricao = f'Data: {formatted_time}\nO objeto: {classe_obj} está parado há {tempo_alerta_str}'
     print("Gerado ALERTA!")
     timestamp = time.time()
-    alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta)
+    alerta = Alerta(device, classe_obj, descricao, frame, timestamp, tempo_alerta, id_objeto)
     time_struct = time.localtime(timestamp)
     data = time.strftime('%d/%m/%Y %H:%M:%S', time_struct)
     subject = "Alerta gerado pelo sistema de monitorização.\nDispositivo: " + str(
@@ -459,7 +459,7 @@ def graficoPerformance(cpu_usage, memory_usage):
     plt.show()
 
 class Alerta:
-    def __init__(self, device, classe, descricao, photo, date, tempo_alerta):
+    def __init__(self, device, classe, descricao, photo, date, tempo_alerta, id_objeto):
         global id_ultimo_alerta
         id_ultimo_alerta += 1
         self.id = id_ultimo_alerta
@@ -469,6 +469,7 @@ class Alerta:
         self.photo = photo
         self.date = date
         self.tempo_alerta = tempo_alerta
+        self.id_objeto = id_objeto
 
     def get_id(self):
         return self.id
@@ -489,6 +490,9 @@ class Alerta:
 
     def get_tempo_alerta(self):
         return self.tempo_alerta
+
+    def get_id_objeto(self):
+        return self.id_objeto
 
 def criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas,
                   distanciaCanto1Lista, distanciaCanto2Lista):
