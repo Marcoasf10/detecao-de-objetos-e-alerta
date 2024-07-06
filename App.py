@@ -22,6 +22,7 @@ from PyQt5 import QtCore
 import yoloScript
 import multiprocessing
 import pickle
+from threading import Event
 
 all_dispositivos_widget = []
 global_devices = []
@@ -319,6 +320,12 @@ class LightButton(QPushButton):
                 color: #FFFFFF;
                 background-color: #5B5B5B;
             }
+            QPushButton:hover {
+                background-color: #707070;
+            }
+            QPushButton:pressed {
+                background-color: #404040;
+            }
         """)
 
 
@@ -333,6 +340,12 @@ class WidgetButton(QPushButton):
                 padding: 10px;
                 color: #FFFFFF;
                 background-color: #D9D9D9;
+            }
+            QPushButton:hover {
+                background-color: #BFBFBF;
+            }
+            QPushButton:pressed {
+                background-color: #A5A5A5;
             }
         """)
 
@@ -364,8 +377,17 @@ class DarkButton(QPushButton):
                 color: #FFFFFF;
                 background-color: #292929;
             }
+            QPushButton:hover {
+                background-color: #3e3e3e;
+            }
+            QPushButton:pressed {
+                background-color: #4e4e4e;
+            }
+            QPushButton:disabled {
+                background-color: #808080;
+                color: #A0A0A0;
+            }
         """)
-
 
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
@@ -1688,7 +1710,38 @@ class CustomWidget(QWidget):
         if self.combo_box_time.currentText() == "horas":
             return int(self.combo_box.currentText()) * 3600
 
+class ConnectionThread(QThread):
+    connection_status = pyqtSignal(bool, str)
 
+    def __init__(self, ip, timeout=10):
+        super().__init__()
+        self.ip = ip
+        self.timeout = timeout
+        self.cap = None
+
+    def run(self):
+        def open_camera(event):
+            try:
+                self.cap = cv2.VideoCapture(self.ip)
+                if self.cap.isOpened():
+                    ret, frame = self.cap.read()
+                    if ret and frame is not None:
+                        event.set()
+            except Exception as e:
+                print(f"Error opening camera: {e}")
+
+        event = Event()
+        thread = Thread(target=open_camera, args=(event,))
+        thread.start()
+        event.wait(self.timeout)  # Wait for the event to be set or timeout
+
+        if not event.is_set() or self.cap is None or not self.cap.isOpened():
+            self.connection_status.emit(False, "Não foi possível conectar ao dispositivo.")
+        else:
+            self.connection_status.emit(True, "Conexão estabelecida com sucesso.")
+
+        if self.cap:
+            self.cap.release()
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list, dict)
 
@@ -1744,6 +1797,13 @@ class ConfigurarDispositivo(QDialog):
                         QComboBox::item:!selected {{
                             background-color: #D9D9D9;
                             color: #000000;
+                        }}
+                        QComboBox:disabled {{
+                            background-color: #CCCCCC; /* Light gray background */
+                            color: #808080; /* Light gray text color */
+                        }}
+                        QCheckBox::indicator:disabled {{
+                            background-color: #CCCCCC; /* Light gray */
                         }}
                         QListWidget {{
                             font-size: 14px;
@@ -1815,7 +1875,9 @@ class ConfigurarDispositivo(QDialog):
         self.ipLabeb = QLabel("Introduza IP do dispositivo")
         self.ip_line_edit = QLineEdit()
         self.ip_line_edit.setText(name)
+        self.test_connection_label = QLabel("A testar a conexão...")
         self.testButton = DarkButton("Test connection")
+        self.testButton.clicked.connect(self.test_connection)
 
         self.layout_objetos = QHBoxLayout()
         self.layout_selected = QVBoxLayout()
@@ -1870,6 +1932,7 @@ class ConfigurarDispositivo(QDialog):
         layout.addWidget(self.atualizar_dispositivos_button)
         layout.addWidget(self.ipLabeb)
         layout.addWidget(self.ip_line_edit)
+        layout.addWidget(self.test_connection_label)
         layout.addWidget(self.testButton)
         layout_horizontal = QHBoxLayout()
         layout_vertical = QVBoxLayout()
@@ -1887,6 +1950,7 @@ class ConfigurarDispositivo(QDialog):
         self.ip_line_edit.hide()
         self.testButton.hide()
         self.label_procura_dispositivo.hide()
+        self.test_connection_label.hide()
         if device != "":
             self.nomeLineEdit.setText(name)
             print("device", device)
@@ -1958,6 +2022,22 @@ class ConfigurarDispositivo(QDialog):
             available_times.append(time)
 
         return available_times
+
+    def test_connection(self):
+        ip = self.ip_line_edit.text().strip()
+        self.testButton.setEnabled(False)
+        self.test_connection_label.show()
+        self.camera_thread = ConnectionThread(ip, timeout=10)
+        self.camera_thread.connection_status.connect(self.handle_connection_status)
+        self.camera_thread.start()
+
+    def handle_connection_status(self, success, message):
+        self.test_connection_label.hide()
+        if success:
+            QMessageBox.information(self, "Sucesso", message)
+        else:
+            QMessageBox.warning(self, "Erro", message)
+        self.testButton.setEnabled(True)
 
     def previous_page(self):
         self.current_page_index = 0
