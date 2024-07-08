@@ -620,6 +620,7 @@ class DispositivoWidget(QWidget):
                     self.classes_to_lose_alert.append(classe)
         if len(self.classes_to_lose_alert) > 0:
             self.show_warning()
+            self.classes_to_lose_alert.clear()
         else:
             self.start_button_clicked()
 
@@ -2825,7 +2826,6 @@ class MainWindow(QWidget):
                 widget.remove_button_action()
             event.accept()
         for widget in all_dispositivos_widget[:]:
-            print("Aqui")
             widget.remove_button_action()
         self.dispositivos_window.queue.put(-1)
 
