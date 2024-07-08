@@ -80,7 +80,7 @@ def diferenceImgs(img1, img2):
     return mse, diff
 
 
-def open_capture_with_timeout(device, timeout=10):
+def open_capture_with_timeout(device, timeout=20):
     cap = None
     event = Event()
 
