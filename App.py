@@ -2659,19 +2659,23 @@ class MainWindow(QWidget):
                     self.save_files()
                     for widget in all_dispositivos_widget[:]:
                         widget.remove_button_action()
+                self.file_name = None
             elif reply == QMessageBox.No:
                 for widget in all_dispositivos_widget[:]:
                     widget.remove_button_action()
+                self.file_name = None
             elif reply == QMessageBox.Cancel:
                 return
-        for widget in all_dispositivos_widget[:]:
-            widget.remove_button_action()
+        else:
+            for widget in all_dispositivos_widget[:]:
+                widget.remove_button_action()
+            self.file_name = None
     def open_files(self):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
-        for widget in all_dispositivos_widget[:]:
-            widget.remove_button_action()
         if file_name:
+            for widget in all_dispositivos_widget[:]:
+                widget.remove_button_action()
             with open(file_name, 'r') as file:
                 data = json.load(file)
                 try:
