@@ -1475,6 +1475,8 @@ class AlertasWindow(QWidget):
         """)
 
     def eliminar_alertas(self):
+        if len(self.alertas_widgets) == 0:
+            return
         msg_box = QMessageBox(self)
         msg_box.setIcon(QMessageBox.Question)
         msg_box.setWindowTitle('Confirmação')
