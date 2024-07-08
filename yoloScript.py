@@ -4,7 +4,7 @@ import smtplib
 import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -50,13 +50,14 @@ emails_alert_lock = Lock()
 phone_numbers_alert_lock = Lock()
 id_ultimo_alerta = 0
 
-def addDispositivoToPredict(device, classes, lista_alertas, queue, delay,graphs=False):
+
+def addDispositivoToPredict(device, classes, lista_alertas, queue, delay, graphs=False):
     global grafico_made
     listObjToFind = []
     for classe in classes:
         listObjToFind.append(list(model.names.values()).index(classe))
     change_alert_time(device, lista_alertas)
-    thread = Thread(target=predict, args=(device, listObjToFind, queue, delay, lista_alertas,graphs))
+    thread = Thread(target=predict, args=(device, listObjToFind, queue, delay, lista_alertas, graphs))
     threads.append(thread)
     thread.start()
     thread.join()
@@ -65,6 +66,8 @@ def addDispositivoToPredict(device, classes, lista_alertas, queue, delay,graphs=
         if grafico_made:
             #graficoPerformance(cpu_usage, memory_usage)
             grafico_made = False
+
+
 def distance(x1, x2, y1, y2):
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
@@ -75,6 +78,25 @@ def diferenceImgs(img1, img2):
     err = np.sum(diff ** 2)
     mse = err / (float(h * w))
     return mse, diff
+
+
+def open_capture_with_timeout(device, timeout=10):
+    cap = None
+    event = Event()
+
+    def open_capture():
+        nonlocal cap
+        cap = cv2.VideoCapture(device)
+        event.set()
+
+    thread = Thread(target=open_capture)
+    thread.start()
+    thread.join(timeout)
+
+    if not event.is_set() or not cap.isOpened():
+        raise Exception(f'Error: Unable to open video capture from {device} within the timeout period.')
+
+    return cap
 
 
 def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
@@ -94,7 +116,15 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
     distanciaCanto2Lista = []
     confiancas = []
     local_model = YOLO(modelo)
-    cap = cv2.VideoCapture(device)
+
+    try:
+        cap = open_capture_with_timeout(device)
+    except Exception as e:
+        predicted_frames[device] = cv2.imread('frames/camera_not_available.png')
+        queue.put(predicted_frames)
+        print(e)
+        return
+
     i = 0
     margem = 4
     last_frame = None
@@ -164,7 +194,8 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
             print("Error diference: ", error)
         # if img not equal last img:
         if last_frame is None or (last_frame is not None and error > 0):
-            results = local_model.track(frame, save=True, project=f'frames/{device_folder}', exist_ok=True, classes=listObjToFind,
+            results = local_model.track(frame, save=True, project=f'frames/{device_folder}', exist_ok=True,
+                                        classes=listObjToFind,
                                         stream=False, persist=True, imgsz=1280, conf=0.3)
             last_frame = frame
         with delete_devices_lock:
@@ -225,7 +256,8 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
                             with alerta_tempo_start_lock:
                                 alerta_tempo_start[device][id][classe_obj] = time.time()
                             with predicted_frames_lock:
-                                alerta = criar_alerta(device, classe_obj, predicted_frames[device], tempo_alerta, queue, id)
+                                alerta = criar_alerta(device, classe_obj, predicted_frames[device], tempo_alerta, queue,
+                                                      id)
                             with open(alerta_filename, 'ab') as f:
                                 pickle.dump(alerta, f)
                     else:
@@ -407,15 +439,18 @@ def send_sms(numero, mensagem):
         to=numero
     )
 
+
 def emails_to_send_alert(emails):
     global emails_alert
     with emails_alert_lock:
         emails_alert = emails
 
+
 def phone_numbers_to_send_alert(phone_numbers):
     global phone_numbers_alert
     with phone_numbers_alert_lock:
         phone_numbers_alert = phone_numbers
+
 
 def graficoPerformance(cpu_usage, memory_usage):
     fig, axs = plt.subplots(1, 2, figsize=(15, 10))
@@ -458,6 +493,7 @@ def graficoPerformance(cpu_usage, memory_usage):
     plt.savefig(output_filename)
     plt.show()
 
+
 class Alerta:
     def __init__(self, device, classe, descricao, photo, date, tempo_alerta, id_objeto):
         global id_ultimo_alerta
@@ -473,6 +509,7 @@ class Alerta:
 
     def get_id(self):
         return self.id
+
     def get_device(self):
         return self.device
 
@@ -493,6 +530,7 @@ class Alerta:
 
     def get_id_objeto(self):
         return self.id_objeto
+
 
 def criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates, y2_coordinates, confiancas,
                   distanciaCanto1Lista, distanciaCanto2Lista):
@@ -631,6 +669,7 @@ def criarGraficos(device, modelo, x1_coordinates, y1_coordinates, x2_coordinates
     output_filename = f'graficosTestes/{device}_output_distCantos_{timestamp}_{modelo}.png'
     plt.savefig(output_filename)
     plt.show()
+
 
 def ultimo_id_alerta(id):
     global id_ultimo_alerta

@@ -27,9 +27,11 @@ from threading import Event
 all_dispositivos_widget = []
 global_devices = []
 
+
 def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
+
 
 if platform.system() == "Windows":
     dropdown_icon_path = './icons/dropdown.png'
@@ -37,6 +39,7 @@ if platform.system() == "Windows":
 else:
     dropdown_icon_path = absolutePath('icons/dropdown.png')
     calendar_icon_path = absolutePath('icons/calendario.png')
+
 
 class CustomScrollArea(QScrollArea):
     def __init__(self):
@@ -388,6 +391,7 @@ class DarkButton(QPushButton):
                 color: #A0A0A0;
             }
         """)
+
 
 class DispositivoWidget(QWidget):
     image_clicked = QtCore.pyqtSignal(str, QPixmap)  # Define a signal with device name
@@ -973,14 +977,14 @@ class DispositivosWindow(QWidget):
         devices = []
         for widget in all_dispositivos_widget:
             devices.append(widget.to_dict())
-            print(widget.to_dict())
         return {"devices": devices}
 
     def from_dict(self, data):
         global all_dispositivos_widget
         all_dispositivos_widget.clear()
         for device_data in data.get("devices", []):
-            self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"], device_data["delay"])
+            self.add_dispositivo(device_data["name"], device_data["device"], device_data["objs"], device_data["alerts"],
+                                 device_data["delay"])
 
 
 class AlertaDetalhes(QMainWindow):
@@ -1504,7 +1508,8 @@ class AlertasWindow(QWidget):
             alertas = [
                 alerta for alerta in alertas
                 if (
-                       str("Dispositivo: " + str(alerta.get_device())).lower() if isinstance(alerta.get_device(), (int, float))
+                       str("Dispositivo: " + str(alerta.get_device())).lower() if isinstance(alerta.get_device(),
+                                                                                             (int, float))
                        else str(alerta.get_device()).lower()
                    ) == device_filter_text.lower()
             ]
@@ -1731,6 +1736,7 @@ class CustomWidget(QWidget):
         if self.combo_box_time.currentText() == "horas":
             return int(self.combo_box.currentText()) * 3600
 
+
 class ConnectionThread(QThread):
     connection_status = pyqtSignal(bool, str)
 
@@ -1763,6 +1769,8 @@ class ConnectionThread(QThread):
 
         if self.cap:
             self.cap.release()
+
+
 class ConfigurarDispositivo(QDialog):
     done_clicked = QtCore.pyqtSignal(str, str, list, dict)
 
@@ -2031,7 +2039,6 @@ class ConfigurarDispositivo(QDialog):
                 custom_widget = CustomWidget(classe, time_frames)
                 list_item = QListWidgetItem(self.objetos_alerta)
                 list_item.setSizeHint(custom_widget.sizeHint())
-                print(self.objetos_alerta)
                 self.objetos_alerta.setItemWidget(list_item, custom_widget)
                 self.class_alertas.append(classe)
 
@@ -2511,6 +2518,8 @@ class MainWindow(QWidget):
         self.emails = []
 
         # Adicionando ações ao menu File
+        new_action = QAction('New', self)
+        new_action.triggered.connect(self.new_file)
         open_action = QAction('Open', self)
         open_action.triggered.connect(self.open_files)
         save_action = QAction('Save', self)
@@ -2520,6 +2529,7 @@ class MainWindow(QWidget):
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self.close)
 
+        file_menu.addAction(new_action)
         file_menu.addAction(open_action)
         file_menu.addAction(save_action)
         file_menu.addAction(save_as_action)
@@ -2586,10 +2596,80 @@ class MainWindow(QWidget):
             "background-color: #5B5B5B; border: none; border-bottom-right-radius:20%; font-size: 20px; padding:10px 0")
         self.alertas_button.setStyleSheet("background-color: #292929; border: none; font-size: 20px; padding:10px 0")
 
+    def new_file(self):
+        data = self.dispositivos_window.to_dict()
+        data['emails'] = self.emails
+        data['phone_numbers'] = self.phone_numbers
+        if len(all_dispositivos_widget) > 0 and (
+                self.file_name is None or self.devices_hash != self.hash_dict(data)):
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.Question)
+            msg_box.setWindowTitle("Message")
+            if self.file_name is None:
+                msg_box.setText("Do you want to save changes?")
+            else:
+                msg_box.setText("Do you want to save changes to " + os.path.basename(self.file_name) + "?")
+            msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            msg_box.setStyleSheet("""
+                                        QMessageBox {
+                                            background-color: #4e4e4e; /* Light background color */
+                                        }
+                                        QMessageBox QLabel {
+                                            color: white;
+                                        }
+                                        QAbstractButton {
+                                            background-color: #292929; /* Darker color for buttons */
+                                            color: white;
+                                            border-radius: 10px; /* Rounded borders */
+                                            padding: 5px 10px;
+                                        }
+                                        QAbstractButton:hover {
+                                            background-color: #3d3d3d; /* Slightly lighter on hover */
+                                        }
+                                        StandardButton {
+                                            background-color: #292929; /* Darker color for buttons */
+                                            color: white;
+                                            border-radius: 10px; /* Rounded borders */
+                                            padding: 5px 10px;
+                                        }
+                                        StandardButton:hover {
+                                            background-color: #3d3d3d;
+                                        }
+                                        QPushButton {
+                                            background-color: #292929;
+                                            color: white;
+                                            border-radius: 10px;
+                                            padding: 5px 10px;
+                                        }
+                                        QPushButton:hover {
+                                            background-color: #3d3d3d;
+                                        }
+
+                                    """)
+
+            reply = msg_box.exec()
+            if reply == QMessageBox.Yes:
+                if self.file_name is None:
+                    self.save_as_files()
+                    if self.file_name is not None:
+                        event.ignore()
+                    for widget in all_dispositivos_widget[:]:
+                        widget.remove_button_action()
+                else:
+                    self.save_files()
+                    for widget in all_dispositivos_widget[:]:
+                        widget.remove_button_action()
+            elif reply == QMessageBox.No:
+                for widget in all_dispositivos_widget[:]:
+                    widget.remove_button_action()
+            elif reply == QMessageBox.Cancel:
+                return
+        for widget in all_dispositivos_widget[:]:
+            widget.remove_button_action()
     def open_files(self):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
-        for widget in all_dispositivos_widget:
+        for widget in all_dispositivos_widget[:]:
             widget.remove_button_action()
         if file_name:
             with open(file_name, 'r') as file:
@@ -2610,6 +2690,7 @@ class MainWindow(QWidget):
             data['phone_numbers'] = self.phone_numbers
             with open(self.file_name, 'w') as file:
                 json.dump(data, file, indent=4)
+            self.devices_hash = self.hash_dict(data)
         else:
             self.save_as_files()
 
@@ -2621,6 +2702,7 @@ class MainWindow(QWidget):
                 data['emails'] = self.emails
                 data['phone_numbers'] = self.phone_numbers
                 json.dump(data, file)
+                self.devices_hash = self.hash_dict(data)
 
     def email_config(self):
         email_dialog = EmailDialog(self, self.emails)
@@ -2717,6 +2799,7 @@ class MainWindow(QWidget):
                 widget.remove_button_action()
             event.accept()
         for widget in all_dispositivos_widget[:]:
+            print("Aqui")
             widget.remove_button_action()
         self.dispositivos_window.queue.put(-1)
 
@@ -2725,7 +2808,6 @@ class MainWindow(QWidget):
         dict_str = json.dumps(d, sort_keys=True)
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
-
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
