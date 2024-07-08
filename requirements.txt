@@ -1,0 +1,19 @@
+# Core packages
+datetime
+
+# phonenumbers
+phonenumbers
+
+# OpenCV
+opencv-python-headless
+numpy
+
+# PyQt5
+PyQt5
+
+#YOLO
+ultralytics
+
+# Twilio
+twilio
+
