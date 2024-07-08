@@ -1305,6 +1305,25 @@ class AlertasWindow(QWidget):
         self.clear_filter_btn.clicked.connect(self.clear_filters)
         self.clear_filter_btn.setObjectName("clear_filter_btn")
 
+        self.eliminar_alertas_btn = LightButton("Eliminar Alertas")
+        self.eliminar_alertas_btn.setMaximumSize(120, 30)
+        self.eliminar_alertas_btn.setStyleSheet("""
+            QPushButton {
+                border: none;
+                border-radius: 5px;
+                font-size: 12px;
+                padding: 5px;
+                color: #FFFFFF;
+                background-color: #5B5B5B;
+            }
+            QPushButton:hover {
+                background-color: #707070;
+            }
+            QPushButton:pressed {
+                background-color: #404040;
+            }""")
+        self.eliminar_alertas_btn.clicked.connect(self.eliminar_alertas)
+
         self.label_ordem = QLabel("Order by: ")
         self.order_filter = QComboBox()
         self.order_filter.addItems(["Order by date ↓", "Order by date ↑"])
@@ -1348,6 +1367,7 @@ class AlertasWindow(QWidget):
 
         self.filter_layout_vertical.addLayout(self.filter_layout)
         self.filter_layout_vertical.addLayout(self.filter_layout_2)
+        self.filter_layout_vertical.addWidget(self.eliminar_alertas_btn, 0, Qt.AlignBottom | Qt.AlignRight)
         self.layout.addLayout(self.filter_layout_vertical)
 
         # Add a button layout
@@ -1453,6 +1473,55 @@ class AlertasWindow(QWidget):
                 width: 20px;
             }}
         """)
+
+    def eliminar_alertas(self):
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Question)
+        msg_box.setWindowTitle('Confirmação')
+        msg_box.setText('Tem a certeza que deseja eliminar os alertas filtrados?')
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+
+        msg_box.setStyleSheet("""
+                    QMessageBox {
+                        background-color: #4e4e4e;
+                    }
+                    QMessageBox QLabel {
+                        color: white;
+                    }
+                    QAbstractButton {
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QAbstractButton:hover {
+                        background-color: #3d3d3d;
+                    }
+                    StandardButton {
+                        background-color: #4e4e4e;
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    StandardButton:hover {
+                        background-color: #3d3d3d;
+                    }
+                    QPushButton {
+                        background-color: #4e4e4e;
+                        color: white;
+                        border-radius: 10px;
+                        padding: 5px 10px;
+                    }
+                    QPushButton:hover {
+                        background-color: #3d3d3d;
+                    }
+
+                """)
+
+        reply = msg_box.exec()
+        if reply == QMessageBox.Yes:
+            for alerta_widget in self.alertas_widgets[:]:
+                alerta_widget.remove_button_clicked()
 
     def add_filter_row(self, label_text, combobox):
         row_layout = QHBoxLayout()
@@ -1562,7 +1631,7 @@ class AlertasWindow(QWidget):
             self.alertas_widgets.remove(alerta_widget)
         if alerta_widget.alerta in self.alertas:
             self.alertas.remove(alerta_widget.alerta)
-        if len(self.alertas_widgets) == 0:
+        if len(self.alertas_widgets) == 0 and len(self.alertas) == 0:
             self.label_sem_alertas.show()
             self.scroll_area.hide()
 
