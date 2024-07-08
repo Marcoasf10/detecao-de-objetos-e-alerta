@@ -345,10 +345,10 @@ class WidgetButton(QPushButton):
                 background-color: #D9D9D9;
             }
             QPushButton:hover {
-                background-color: #BFBFBF;
+                background-color: #A5A5A5;
             }
             QPushButton:pressed {
-                background-color: #A5A5A5;
+                background-color: #7C7C7C;
             }
         """)
 
@@ -2005,7 +2005,6 @@ class ConfigurarDispositivo(QDialog):
         self.test_connection_label.hide()
         if device != "":
             self.nomeLineEdit.setText(name)
-            print("device", device)
             if "http" in str(device) or "rtsp" in str(device):
                 self.checkBox_IP.setChecked(True)
                 self.ip_line_edit.setText(device)
@@ -2154,7 +2153,6 @@ class ConfigurarDispositivo(QDialog):
                 QMessageBox.warning(self, "Erro", "Dispositivo já existe na lista de dispositivos.")
                 return
             device = str(device)
-        print("device", device)
         if device == "" or device == "None":
             QMessageBox.warning(self, "Erro", "Selecione um dispositivo.")
             return
