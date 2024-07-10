@@ -2526,6 +2526,40 @@ class MainWindow(QWidget):
                 #light_button {
                    background-color: #5B5B5B;
                 }
+                
+                QMessageBox {
+                    background-color: #4e4e4e; /* Light background color */
+                }
+                QMessageBox QLabel {
+                    color: white;
+                }
+                QMessageBox QAbstractButton {
+                    background-color: #292929; /* Darker color for buttons */
+                    color: white;
+                    border-radius: 10px; /* Rounded borders */
+                    padding: 5px 10px;
+                }
+                QMessageBox QAbstractButton:hover {
+                    background-color: #3d3d3d; /* Slightly lighter on hover */
+                }
+                QMessageBox StandardButton {
+                    background-color: #292929; /* Darker color for buttons */
+                    color: white;
+                    border-radius: 10px; /* Rounded borders */
+                    padding: 5px 10px;
+                }
+                QMessageBox StandardButton:hover {
+                    background-color: #3d3d3d;
+                }
+                QMessageBox QPushButton {
+                    background-color: #292929;
+                    color: white;
+                    border-radius: 10px;
+                    padding: 5px 10px;
+                }
+                QMessageBox QPushButton:hover {
+                    background-color: #3d3d3d;
+                }
            """)
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -2716,6 +2750,7 @@ class MainWindow(QWidget):
             with open(self.file_name, 'w') as file:
                 json.dump(data, file, indent=4)
             self.devices_hash = self.hash_dict(data)
+            QMessageBox.information(self, "Sucesso", "Ficheiro guardado com sucesso")
         else:
             self.save_as_files()
 
@@ -2728,6 +2763,7 @@ class MainWindow(QWidget):
                 data['phone_numbers'] = self.phone_numbers
                 json.dump(data, file)
                 self.devices_hash = self.hash_dict(data)
+            QMessageBox.information(self, "Sucesso", "Ficheiro guardado com sucesso")
 
     def email_config(self):
         email_dialog = EmailDialog(self, self.emails)
