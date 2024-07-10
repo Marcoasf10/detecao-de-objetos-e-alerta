@@ -1024,27 +1024,27 @@ class AlertaDetalhes(QMainWindow):
             }
         """)
 
-    def format_alert_time(self, seconds):
-        hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(seconds, 60)
-        if hours > 0:
+    def format_alert_time(self, tempo_alerta):
+        if tempo_alerta >= 3600:
+            hours, remainder = divmod(tempo_alerta, 3600)
+            minutes, seconds = divmod(remainder, 60)
             if minutes > 0 and seconds > 0:
-                time_str = f'{int(hours)} horas, {int(minutes)} minutos e {int(seconds)} segundos'
+                tempo_alerta_str = f'{int(hours)} hora(s), {int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
             elif minutes > 0 and seconds == 0:
-                time_str = f'{int(hours)} horas e {int(minutes)} minutos'
+                tempo_alerta_str = f'{int(hours)} hora(s) e {int(minutes)} minuto(s)'
             elif minutes == 0 and seconds > 0:
-                time_str = f'{int(hours)} horas e {int(seconds)} segundos'
+                tempo_alerta_str = f'{int(hours)} hora(s) e {int(seconds)} segundo(s)'
             else:
-                time_str = f'{int(hours)} horas'
-        elif minutes > 0:
+                tempo_alerta_str = f'{int(hours)} hora(s)'
+        elif tempo_alerta >= 60:
+            minutes, seconds = divmod(tempo_alerta, 60)
             if seconds > 0:
-                time_str = f'{int(minutes)} minutos e {int(seconds)} segundos'
-            else:
-                time_str = f'{int(minutes)} minutos'
+                tempo_alerta_str = f'{int(minutes)} minuto(s) e {int(seconds)} segundo(s)'
+            tempo_alerta_str = f'{int(minutes)} minuto(s)'
         else:
-            time_str = f'{int(seconds)} segundos'
+            tempo_alerta_str = f'{int(tempo_alerta)} segundo(s)'
 
-        return time_str
+        return tempo_alerta_str
 
 
 class AlertaWidget(QWidget):
