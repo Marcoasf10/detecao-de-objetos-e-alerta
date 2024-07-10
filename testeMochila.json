@@ -1,0 +1,21 @@
+{
+    "devices": [
+        {
+            "name": "A",
+            "device": 1,
+            "objs": [
+                "person"
+            ],
+            "alerts": {
+                "person": 30
+            },
+            "delay": 5
+        }
+    ],
+    "emails": [
+        "valtefutebol@gmail.com"
+    ],
+    "phone_numbers": [
+        "+351965895440"
+    ]
+}
