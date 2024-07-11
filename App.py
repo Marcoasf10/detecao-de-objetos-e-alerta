@@ -32,6 +32,7 @@ def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+
 alertas_path = os.path.abspath('alertas.bin')
 if not os.path.exists('alertas.bin'):
     with open('alertas.bin', 'wb') as file:
@@ -794,7 +795,8 @@ class DispositivoWidget(QWidget):
 
     @staticmethod
     def from_dict(self, data):
-        return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"], self.dispositivos_window, data["delay"])
+        return DispositivoWidget(data["name"], data["device"], data["objs"], data["alerts"], self.dispositivos_window,
+                                 data["delay"])
 
 
 class StyledScrollBar(QScrollBar):
@@ -2488,6 +2490,7 @@ class ToastNotification(QWidget):
             ToastNotification.active_toasts.remove(self)
         event.accept()
 
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -2732,6 +2735,7 @@ class MainWindow(QWidget):
             for widget in all_dispositivos_widget[:]:
                 widget.remove_button_action()
             self.file_name = None
+
     def open_files(self):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
@@ -2875,6 +2879,7 @@ class MainWindow(QWidget):
         dict_str = json.dumps(d, sort_keys=True)
         hash_obj = hashlib.sha256(dict_str.encode())
         return hash_obj.hexdigest()
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
