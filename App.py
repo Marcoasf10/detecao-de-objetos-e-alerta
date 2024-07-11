@@ -32,6 +32,10 @@ def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
+alertas_path = os.path.abspath('alertas.bin')
+if not os.path.exists('alertas.bin'):
+    with open('alertas.bin', 'wb') as file:
+        pass
 
 if platform.system() == "Windows":
     dropdown_icon_path = './icons/dropdown.png'
@@ -1189,8 +1193,8 @@ class AlertaWidget(QWidget):
 
     def remove_button_clicked(self):
         try:
+            global alertas_path
             alertas = []
-            alertas_path = absolutePath("alertas.bin")
             with open(alertas_path, 'rb') as f:
                 while True:
                     try:
@@ -1489,8 +1493,8 @@ class AlertasWindow(QWidget):
                 alerta_widget.remove_button_clicked()
 
     def carregar_alertas(self):
+        global alertas_path
         self.alertas = []
-        alertas_path = absolutePath("./alertas.bin")
         devices_in_alerts = set()
         self.device_filter.clear()
         try:
