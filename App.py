@@ -2392,7 +2392,7 @@ class PhoneDialog(QDialog):
 class ToastNotification(QWidget):
     active_toasts = []
 
-    def __init__(self, title, message, duration=2000, parent=None):
+    def __init__(self, title, message, duration=1000, parent=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -2451,6 +2451,10 @@ class ToastNotification(QWidget):
         self.opacity_animation.finished.connect(self.close)
 
     def showNotification(self):
+        if len(ToastNotification.active_toasts) >= 4:
+            oldest_toast = ToastNotification.active_toasts.pop(0)
+            oldest_toast.close()
+
         if not self.isVisible():
             self.opacity_animation.setDirection(QPropertyAnimation.Forward)
             self.opacity_animation.start()
@@ -2462,8 +2466,8 @@ class ToastNotification(QWidget):
 
     def move_to_free_space(self):
         parent_rect = self.parent().geometry()
-        bottom_margin = 10
-        x_margin = 10
+        bottom_margin = 5
+        x_margin = 5
         y = parent_rect.bottom() - bottom_margin - self.height()
         x = parent_rect.right() - x_margin - self.width()
 
@@ -2479,7 +2483,6 @@ class ToastNotification(QWidget):
         if self in ToastNotification.active_toasts:
             ToastNotification.active_toasts.remove(self)
         event.accept()
-
 
 class MainWindow(QWidget):
     def __init__(self):

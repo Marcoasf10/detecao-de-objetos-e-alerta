@@ -13,6 +13,7 @@ PyQt5
 
 #YOLO
 ultralytics
+lapx
 
 # Twilio
 twilio
