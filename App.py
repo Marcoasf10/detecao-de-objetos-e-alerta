@@ -2715,9 +2715,9 @@ class MainWindow(QWidget):
             reply = msg_box.exec()
             if reply == QMessageBox.Yes:
                 if self.file_name is None:
-                    self.save_as_files()
-                    if self.file_name is not None:
-                        event.ignore()
+                    saved = self.save_as_files()
+                    if saved == -1:
+                        return
                     for widget in all_dispositivos_widget[:]:
                         widget.remove_button_action()
                 else:
@@ -2775,6 +2775,8 @@ class MainWindow(QWidget):
                 json.dump(data, file)
                 self.devices_hash = self.hash_dict(data)
             QMessageBox.information(self, "Sucesso", "Ficheiro guardado com sucesso")
+        else:
+            return -1
 
     def email_config(self):
         email_dialog = EmailDialog(self, self.emails)
