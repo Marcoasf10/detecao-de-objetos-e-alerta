@@ -2767,6 +2767,7 @@ class MainWindow(QWidget):
                 json.dump(data, file)
                 self.devices_hash = self.hash_dict(data)
             QMessageBox.information(self, "Sucesso", "Ficheiro guardado com sucesso")
+            self.file_name = file_name
         else:
             return -1
 
