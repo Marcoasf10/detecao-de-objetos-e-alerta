@@ -1648,8 +1648,9 @@ class ListarThread(QThread):
 
 
 class CustomWidget(QWidget):
-    def __init__(self, text, times, tempo=None):
+    def __init__(self, text, times, delay, tempo=None):
         super().__init__()
+        self.delay = delay
         layout = QHBoxLayout()
         self.label = QLabel(text)
         self.combo_box = QComboBox()
@@ -1704,7 +1705,6 @@ class CustomWidget(QWidget):
                 color: #000000;
             }}
         """)
-
         if tempo is not None:
             if tempo >= 3600:
                 self.update_time_unit(2)
@@ -1725,9 +1725,9 @@ class CustomWidget(QWidget):
         if unit == "segundos":
             return times
         elif unit == "minutos":
-            return list(range(60))
+            return [t // 60 for t in times if t % self.delay == 0 and t % 60 == 0]
         elif unit == "horas":
-            return list(range(24))
+            return [t // 3600 for t in times if t % self.delay == 0 and t % 3600 == 0]
 
     def update_combo_box(self, times, unit):
         self.combo_box.clear()
@@ -1744,7 +1744,10 @@ class CustomWidget(QWidget):
                     else:
                         break
                 elif unit == "horas":
-                    self.combo_box.addItem(str(int(time)))
+                    if time < 24:
+                        self.combo_box.addItem(str(int(time)))
+                    else:
+                        break
 
     def get_classe(self):
         return self.label.text()
@@ -2044,7 +2047,7 @@ class ConfigurarDispositivo(QDialog):
         if len(alertas_dict) != 0:
             for classe, tempo in alertas_dict.items():
                 time_frames = self.available_times(self.interval)
-                custom_widget = CustomWidget(classe, time_frames, tempo)
+                custom_widget = CustomWidget(classe, time_frames, delay=self.interval, tempo=tempo)
                 list_item = QListWidgetItem(self.objetos_alerta)
                 list_item.setSizeHint(custom_widget.sizeHint())
                 self.objetos_alerta.setItemWidget(list_item, custom_widget)
@@ -2056,7 +2059,7 @@ class ConfigurarDispositivo(QDialog):
         time_frames = self.available_times(self.interval)
         for classe in sorted(self.class_names_selected):
             if classe not in self.class_alertas:
-                custom_widget = CustomWidget(classe, time_frames)
+                custom_widget = CustomWidget(classe, time_frames, delay=self.interval)
                 list_item = QListWidgetItem(self.objetos_alerta)
                 list_item.setSizeHint(custom_widget.sizeHint())
                 self.objetos_alerta.setItemWidget(list_item, custom_widget)
