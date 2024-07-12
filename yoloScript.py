@@ -14,8 +14,8 @@ import psutil
 import matplotlib.pyplot as plt
 import shutil
 import datetime
+import sys
 
-import App
 
 modelo = 'yolov8s'
 model = YOLO(modelo)
@@ -120,7 +120,8 @@ def predict(device, listObjToFind, queue, delay, lista_alertas, graphs):
     try:
         cap = open_capture_with_timeout(device)
     except Exception as e:
-        predicted_frames[device] = cv2.imread('frames/camera_not_available.png')
+        path_camera_not_available = absolutePath('frames/camera_not_available.png')
+        predicted_frames[device] = cv2.imread(path_camera_not_available)
         queue.put(predicted_frames)
         print(e)
         return
@@ -674,3 +675,9 @@ def ultimo_id_alerta(id):
     global id_ultimo_alerta
     id_ultimo_alerta = id
     print(id_ultimo_alerta)
+
+
+def absolutePath(relative_path):
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+

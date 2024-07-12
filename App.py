@@ -1,9 +1,7 @@
 import datetime
 import hashlib
 import json
-import math
 import os
-import sys
 import time
 import platform
 from multiprocessing import Queue
@@ -27,12 +25,6 @@ from threading import Event
 all_dispositivos_widget = []
 global_devices = []
 
-
-def absolutePath(relative_path):
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
-
-
 alertas_path = os.path.abspath('alertas.bin')
 if not os.path.exists('alertas.bin'):
     with open('alertas.bin', 'wb') as file:
@@ -42,8 +34,8 @@ if platform.system() == "Windows":
     dropdown_icon_path = './icons/dropdown.png'
     calendar_icon_path = './icons/calendario.png'
 else:
-    dropdown_icon_path = absolutePath('icons/dropdown.png')
-    calendar_icon_path = absolutePath('icons/calendario.png')
+    dropdown_icon_path = yoloScript.absolutePath('icons/dropdown.png')
+    calendar_icon_path = yoloScript.absolutePath('icons/calendario.png')
 
 
 class CustomScrollArea(QScrollArea):
@@ -221,7 +213,7 @@ class SplashScreen(QWidget):
 
         # QLabel for the image
         self.image_label = QLabel(self.frame)
-        pixmap = QPixmap(absolutePath('icons/iconBranco.png'))
+        pixmap = QPixmap(yoloScript.absolutePath('icons/iconBranco.png'))
         self.image_label.setPixmap(pixmap)
         self.image_label.setFixedSize(100, 100)  # Set the size of the image
         self.image_label.setScaledContents(True)  # Scale image to fit the QLabel
@@ -407,7 +399,7 @@ class DispositivoWidget(QWidget):
         self.dispositivos_window = dispositovo_window
         self.pause = False
         self.name = name
-        self.image_path = absolutePath("frames/noCamera.jpg")
+        self.image_path = yoloScript.absolutePath("frames/noCamera.jpg")
         self.objToFind = objToFind
         layout = QVBoxLayout(self)
         self.device = device
@@ -416,26 +408,26 @@ class DispositivoWidget(QWidget):
 
         # Setting button
         self.settings_button = WidgetButton()
-        self.settings_button.setIcon(QIcon(absolutePath("icons/settings.png")))
+        self.settings_button.setIcon(QIcon(yoloScript.absolutePath("icons/settings.png")))
         self.settings_button.setIconSize(QSize(40, 40))
         self.settings_button.setFixedSize(50, 50)
         self.settings_button.clicked.connect(self.setting_button_clicked)
 
         self.expand_button = WidgetButton()
-        self.expand_button.setIcon(QIcon(absolutePath("icons/expand.png")))
+        self.expand_button.setIcon(QIcon(yoloScript.absolutePath("icons/expand.png")))
         self.expand_button.setIconSize(QSize(35, 35))
         self.expand_button.setFixedSize(50, 50)
         self.expand_button.clicked.connect(self.expand_button_clicked)
 
         self.remove_button = WidgetButton()
-        self.remove_button.setIcon(QIcon(absolutePath("icons/remove.png")))
+        self.remove_button.setIcon(QIcon(yoloScript.absolutePath("icons/remove.png")))
         self.remove_button.setIconSize(QSize(35, 35))
         self.remove_button.setFixedSize(50, 50)
         self.remove_button.clicked.connect(self.remove_button_clicked)
 
         layout_imagem = QHBoxLayout()
 
-        self.iconPause = QIcon(absolutePath("icons/pause_circle.png"))
+        self.iconPause = QIcon(yoloScript.absolutePath("icons/pause_circle.png"))
 
         self.image_label = QLabel()
         pixmap = QPixmap(self.image_path)
@@ -457,17 +449,17 @@ class DispositivoWidget(QWidget):
 
         button_layout = QHBoxLayout()
         self.start_button = WidgetPressedButton()
-        self.start_button.setIcon(QIcon(absolutePath("icons/play.png")))
+        self.start_button.setIcon(QIcon(yoloScript.absolutePath("icons/play.png")))
         self.start_button.setIconSize(QSize(30, 30))
         self.start_button.setFixedSize(50, 50)
         self.start_button.clicked.connect(self.start_button_clicked)
         self.stop_button = WidgetButton()
-        self.stop_button.setIcon(QIcon(absolutePath("icons/pause.png")))
+        self.stop_button.setIcon(QIcon(yoloScript.absolutePath("icons/pause.png")))
         self.stop_button.setIconSize(QSize(35, 35))
         self.stop_button.setFixedSize(50, 50)
         self.stop_button.clicked.connect(self.stop_button_clicked)
         self.live_button = WidgetButton()
-        self.live_button.setIcon(QIcon(absolutePath("icons/live.png")))
+        self.live_button.setIcon(QIcon(yoloScript.absolutePath("icons/live.png")))
         self.live_button.clicked.connect(self.live_button_clicked)
         self.live_button.setIconSize(QSize(35, 35))
         self.live_button.setFixedSize(50, 50)
@@ -838,12 +830,12 @@ class DispositivosWindow(QWidget):
         self.add_button.clicked.connect(self.open_device_ip_window)
 
         self.mosaicoButton = LightButton()
-        self.mosaicoButton.setIcon(QIcon(absolutePath("icons/mosaico_2.png")))
+        self.mosaicoButton.setIcon(QIcon(yoloScript.absolutePath("icons/mosaico_2.png")))
         self.mosaicoButton.clicked.connect(self.layout_mosaico)
         self.threads = []
 
         self.horizontalbutton = LightButton()
-        self.horizontalbutton.setIcon(QIcon(absolutePath("icons/mosaico.png")))
+        self.horizontalbutton.setIcon(QIcon(yoloScript.absolutePath("icons/mosaico.png")))
         self.horizontalbutton.clicked.connect(self.layout_horizontal)
         self.mosaicoButton.setIconSize(QSize(35, 35))
         self.mosaicoButton.setFixedSize(50, 50)
@@ -971,7 +963,7 @@ class DispositivosWindow(QWidget):
 class AlertaDetalhes(QMainWindow):
     def __init__(self, frame, alerta_tempo, device, classe, timestamp, id_objeto):
         super().__init__()
-        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+        self.setWindowIcon(QIcon(yoloScript.absolutePath('icons/iconBranco.png')))
         self.setWindowTitle("Detalhes do Alerta")
         # Set the window size and position to be centered
         self.setGeometry(100, 100, 800, 600)
@@ -1068,7 +1060,7 @@ class AlertaWidget(QWidget):
 
         # Botão para eliminar o widget
         self.remove_button = QPushButton()
-        self.remove_button.setIcon(QIcon(absolutePath("icons/close_white.png")))
+        self.remove_button.setIcon(QIcon(yoloScript.absolutePath("icons/close_white.png")))
         self.remove_button.setIconSize(QSize(15, 15))
         self.remove_button.setFixedSize(25, 25)
         self.remove_button.clicked.connect(self.remove_button_clicked_msg_box)
@@ -1258,7 +1250,7 @@ class AlertasWindow(QWidget):
         self.device_filter.setPlaceholderText("Filter by device")
 
         self.clear_device_filter = QPushButton()
-        self.clear_device_filter.setIcon(QIcon(absolutePath("icons/close_red.png")))
+        self.clear_device_filter.setIcon(QIcon(yoloScript.absolutePath("icons/close_red.png")))
         self.clear_device_filter.setIconSize(QSize(15, 15))
         self.clear_device_filter.setFixedSize(25, 25)
         self.clear_device_filter.clicked.connect(self.clear_filter_device)
@@ -1273,7 +1265,7 @@ class AlertasWindow(QWidget):
         self.object_filter.setPlaceholderText("Filter by object")
 
         self.clear_obj_filter = QPushButton()
-        self.clear_obj_filter.setIcon(QIcon(absolutePath("icons/close_red.png")))
+        self.clear_obj_filter.setIcon(QIcon(yoloScript.absolutePath("icons/close_red.png")))
         self.clear_obj_filter.setIconSize(QSize(15, 15))
         self.clear_obj_filter.setFixedSize(25, 25)
         self.clear_obj_filter.clicked.connect(self.clear_filter_obj)
@@ -1621,7 +1613,7 @@ class AlertasWindow(QWidget):
 class ImageWindow(QMainWindow):
     def __init__(self, pixmap, parent=None, device=""):
         super().__init__()
-        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+        self.setWindowIcon(QIcon(yoloScript.absolutePath('icons/iconBranco.png')))
         self.dispositivo_widget = parent
         self.setWindowTitle(f'Imagem do Dispositivo {device}')
         self.setGeometry(0, 0, 800, 600)
@@ -1811,7 +1803,7 @@ class ConfigurarDispositivo(QDialog):
         if objToFind is None:
             objToFind = []
         super().__init__()
-        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+        self.setWindowIcon(QIcon(yoloScript.absolutePath('icons/iconBranco.png')))
         global dropdown_icon_path
         self.setStyleSheet(f"""
                        ConfigurarDispositivo {{
@@ -1942,7 +1934,7 @@ class ConfigurarDispositivo(QDialog):
         self.layout_availave = QVBoxLayout()
 
         self.button_next = LightButton("")
-        self.button_next.setIcon(QIcon(absolutePath("icons/arrow_right.png")))
+        self.button_next.setIcon(QIcon(yoloScript.absolutePath("icons/arrow_right.png")))
         self.button_next.setIconSize(QSize(50, 50))
         self.button_next.setFixedSize(50, 50)
         self.button_next.clicked.connect(self.next_page)
@@ -2027,7 +2019,7 @@ class ConfigurarDispositivo(QDialog):
         vertical_left_layout = QVBoxLayout()
         self.vertical_right_layout = QVBoxLayout()
         self.button_prev = LightButton("")
-        self.button_prev.setIcon(QIcon(absolutePath("icons/arrow_left.png")))
+        self.button_prev.setIcon(QIcon(yoloScript.absolutePath("icons/arrow_left.png")))
         self.button_prev.setIconSize(QSize(50, 50))
         self.button_prev.setFixedSize(50, 50)
         self.button_prev.clicked.connect(self.previous_page)
@@ -2425,7 +2417,7 @@ class ToastNotification(QWidget):
         title_layout.addWidget(self.title_label)
 
         # Warning icon label
-        warning_pixmap = QPixmap(absolutePath('icons/warning.png'))
+        warning_pixmap = QPixmap(yoloScript.absolutePath('icons/warning.png'))
         self.warning_icon_label = QLabel()
         self.warning_icon_label.setPixmap(
             warning_pixmap.scaledToWidth(16, Qt.SmoothTransformation))  # Adjust size as needed
@@ -2494,7 +2486,7 @@ class ToastNotification(QWidget):
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+        self.setWindowIcon(QIcon(yoloScript.absolutePath('icons/iconBranco.png')))
         self.setWindowTitle("SafeSight")
         self.setGeometry(500, 100, 1280, 720)
         self.setStyleSheet("""
@@ -2739,6 +2731,7 @@ class MainWindow(QWidget):
     def open_files(self):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
+        print(file_name)
         if file_name:
             for widget in all_dispositivos_widget[:]:
                 widget.remove_button_action()
@@ -2922,6 +2915,6 @@ if __name__ == '__main__':
                }
            ''')
     window.show()
-    app.setWindowIcon(QIcon(absolutePath('icons/iconBranco.png')))
+    app.setWindowIcon(QIcon(yoloScript.absolutePath('icons/iconBranco.png')))
     app.exec_()
     print('Closing Window...')
