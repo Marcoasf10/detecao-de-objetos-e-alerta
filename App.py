@@ -2731,7 +2731,6 @@ class MainWindow(QWidget):
     def open_files(self):
         global all_dispositivos_widget
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "JSON Files (*.json);;All Files (*)")
-        print(file_name)
         if file_name:
             for widget in all_dispositivos_widget[:]:
                 widget.remove_button_action()
