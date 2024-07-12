@@ -16,7 +16,6 @@ import shutil
 import datetime
 import sys
 
-
 modelo = 'yolov8s'
 model = YOLO(modelo)
 retrieved_frames = {}
@@ -397,14 +396,18 @@ def criar_alerta(device, classe_obj, frame, tempo_alerta, queue, id_objeto):
         device) + "\t" + "Classe: " + classe_obj + "\n" "Tempo Parado: " + tempo_alerta_str
 
     queue.put({-2: alerta_notiication})
+    thread = Thread(target=send_alerts, args=(classe_obj, tempo_alerta_str, subject))
+    thread.start()
+    return alerta
+
+
+def send_alerts(classe_obj, tempo_alerta_str, subject):
     with emails_alert_lock:
         for email in emails_alert:
             send_email(f'Alerta!! {classe_obj} está parado há {tempo_alerta_str}', subject, email)
     with phone_numbers_alert_lock:
         for phone_number in phone_numbers_alert:
             send_sms(phone_number, subject)
-
-    return alerta
 
 
 def send_email(subject, body, to_email):
@@ -680,4 +683,3 @@ def ultimo_id_alerta(id):
 def absolutePath(relative_path):
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
-
