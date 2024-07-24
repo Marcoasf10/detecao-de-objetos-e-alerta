@@ -433,8 +433,8 @@ def send_email(subject, body, to_email):
 
 
 def send_sms(numero, mensagem):
-    account_id = "ACbb0292084f73400fbeed6a065c40952a"
-    auth_token = "14ce372723bef16b1b2ce8cd2af91858"
+    account_id = "ACCOUNT_ID"
+    auth_token = "TOKEN"
     client = Client(account_id, auth_token)
     client.messages.create(
         body=mensagem,
